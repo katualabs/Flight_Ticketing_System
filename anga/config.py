@@ -13,7 +13,7 @@ load_dotenv()
 
 
 def load_or_create_secret_key(instance_path: Path) -> str:
-    """Return a stable development key without ever committing one.
+    """Return a stable key without ever committing one.
 
     Generating into ``instance/`` (git-ignored) keeps sessions valid across
     restarts while leaving no secret in the repository.
@@ -24,6 +24,7 @@ def load_or_create_secret_key(instance_path: Path) -> str:
     instance_path.mkdir(parents=True, exist_ok=True)
     key = secrets.token_hex(32)
     key_file.write_text(key, encoding="utf-8")
+    key_file.chmod(0o600)
     return key
 
 
@@ -82,7 +83,7 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     ENV_NAME = "production"
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = os.environ.get("ANGA_COOKIE_SECURE", "1") != "0"
 
 
 CONFIGS: dict[str, type[Config]] = {

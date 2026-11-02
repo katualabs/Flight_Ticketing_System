@@ -27,8 +27,6 @@ def create_app(config_name: str | None = None, overrides: dict | None = None) ->
     if not app.config.get("DATABASE_PATH"):
         app.config["DATABASE_PATH"] = str(instance_path / "anga_air.db")
     if not app.config.get("SECRET_KEY"):
-        if name == "production":
-            raise RuntimeError("SECRET_KEY must be set in production.")
         app.config["SECRET_KEY"] = load_or_create_secret_key(instance_path)
 
     db.init_app(app)

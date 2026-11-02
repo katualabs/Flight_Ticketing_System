@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from anga import create_app, security
+from anga.config import load_or_create_secret_key
 
 
 def test_home_responds(client):
@@ -20,10 +21,18 @@ def test_demo_notice_is_on_every_page(client):
         assert b"Anga Air is fictional; no real bookings or payments." in page.data
 
 
-def test_production_requires_a_secret_key(tmp_path, monkeypatch):
-    monkeypatch.delenv("SECRET_KEY", raising=False)
-    with pytest.raises(RuntimeError, match="SECRET_KEY"):
-        create_app("production", {"SECRET_KEY": None, "DATABASE_PATH": str(tmp_path / "x.db")})
+def test_missing_secret_key_is_generated_once_and_reused(tmp_path):
+    instance = tmp_path / "instance"
+    first = load_or_create_secret_key(instance)
+    assert len(first) >= 32
+    assert load_or_create_secret_key(instance) == first
+
+
+def test_configured_secret_key_is_respected(tmp_path):
+    app = create_app(
+        "production", {"SECRET_KEY": "k" * 40, "DATABASE_PATH": str(tmp_path / "x.db")}
+    )
+    assert app.config["SECRET_KEY"] == "k" * 40
 
 
 def test_testing_config_is_applied(app):
