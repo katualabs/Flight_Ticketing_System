@@ -38,7 +38,7 @@ def test_not_found_uses_the_branded_page(client):
 
 
 def test_post_without_csrf_is_rejected(client):
-    assert client.post("/about").status_code == 400
+    assert client.post("/book/start", csrf=False).status_code == 400
 
 
 def test_security_headers_present(client):

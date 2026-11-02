@@ -10,6 +10,7 @@ import shutil
 from datetime import datetime
 
 import pytest
+from flask.testing import FlaskClient
 
 from anga import clock, create_app, seed
 
@@ -52,6 +53,26 @@ def seeded(app):
         yield app
 
 
+class CsrfClient(FlaskClient):
+    """Test client that behaves like a browser form: it sends the CSRF token.
+
+    Pass ``csrf=False`` to post without one, for tests of the protection itself.
+    """
+
+    def _ensure_token(self) -> str:
+        with self.session_transaction() as session:
+            return session.setdefault("_csrf", "test-csrf-token")
+
+    def post(self, *args, csrf: bool = True, **kwargs):
+        if csrf:
+            token = self._ensure_token()
+            headers = dict(kwargs.pop("headers", None) or {})
+            headers.setdefault("X-CSRF-Token", token)
+            kwargs["headers"] = headers
+        return super().post(*args, **kwargs)
+
+
 @pytest.fixture
 def client(app):
+    app.test_client_class = CsrfClient
     return app.test_client()

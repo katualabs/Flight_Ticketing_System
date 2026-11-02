@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import json
+from datetime import timedelta
 
 from flask import current_app
 
 from anga import clock
 from anga.db import get_db, init_db, transaction
 from anga.repositories import airports as airports_repo
+from anga.repositories import extras as extras_repo
 from anga.repositories import flights as flights_repo
+from anga.repositories import promos as promos_repo
 from anga.repositories import settings as settings_repo
 from anga.services import schedule
 
@@ -113,6 +116,15 @@ ROUTES = [
     ("AN412", "KGL", "NBO", "17:35", 90, "E190", 18500, "1234567"),
 ]
 
+EXTRAS = [
+    ("BAG23", "Extra 23 kg bag", 2500, "bag"),
+    ("MEAL_SWAHILI", "Swahili coast meal", 950, "meal"),
+    ("MEAL_VEG", "Vegetarian meal", 850, "meal"),
+    ("MEAL_HALAL", "Halal meal", 850, "meal"),
+    ("PRIORITY", "Priority boarding", 800, "priority"),
+    ("LOUNGE", "Lounge access", 3500, "lounge"),
+]
+
 HISTORY_ROUTES = ("AN101", "AN102", "AN201", "AN202", "AN301", "AN302")
 DEFAULT_SETTINGS = {
     "usd_rate": "129",
@@ -167,8 +179,28 @@ def seed_reference_data() -> None:
             (code, name, json.dumps(layout)) for code, (name, layout) in AIRCRAFT.items()
         )
         flights_repo.insert_route_templates(ROUTES)
+        extras_repo.insert_many(EXTRAS)
         for key, value in DEFAULT_SETTINGS.items():
             settings_repo.put(key, value)
+
+
+def seed_promos() -> None:
+    today = clock.today()
+    start = (today - timedelta(days=30)).isoformat()
+    end = (today + timedelta(days=365)).isoformat()
+    with transaction():
+        promos_repo.insert("KARIBU10", "percent", 10, "all", 10000, start, end, None)
+        promos_repo.insert("COAST2026", "fixed", 1500, "coastal", 0, start, end, 500)
+        promos_repo.insert(
+            "EXPIRED5",
+            "percent",
+            5,
+            "all",
+            0,
+            (today - timedelta(days=120)).isoformat(),
+            (today - timedelta(days=30)).isoformat(),
+            None,
+        )
 
 
 def seed_schedule() -> int:
@@ -188,6 +220,7 @@ def run(reset_first: bool = False) -> bool:
         return False
     seed_reference_data()
     seed_schedule()
+    seed_promos()
     settings_repo.put("seeded_at", clock.timestamp())
     get_db().execute("PRAGMA optimize")
     return True
