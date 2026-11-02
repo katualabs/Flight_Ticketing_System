@@ -263,8 +263,8 @@ def hero() -> str:
         half = 2 + 12 * t * t
         body += rect(828 - half / 2, y, half, 6 + 18 * t * t, "#ffe9b5", 'opacity=".85"')
 
-    body += flight_arc(560, 690, 1270, 170, 200, "#ffffff", 2.5)
-    body += airliner(1270, 170, 1.65, -20)
+    body += flight_arc(560, 690, 1250, 270, 170, "#ffffff", 2.5)
+    body += airliner(1250, 270, 1.65, -20)
     return svg(width, height, body, defs, "An airliner climbs from a savannah runway at sunset")
 
 
@@ -516,7 +516,7 @@ def empty_state(kind: str) -> str:
 
 
 def write(name: str, content: str) -> None:
-    (OUTPUT / name).write_text(content, encoding="utf-8")
+    (OUTPUT / name).write_text(content, encoding="utf-8", newline="\n")
 
 
 def main() -> None:
