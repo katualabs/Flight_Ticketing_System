@@ -1,0 +1,54 @@
+{% extends "booking/_layout.html" %}
+{% from "macros.html" import csrf %}
+{% block wizard %}
+  <h1>{{ t('book.review_title') }}</h1>
+  <section class="card mb-4">
+    <h2 class="card-title">{{ t('book.passengers_heading') }}</h2>
+    <ul class="plain">
+      {% for person in draft.passengers %}
+        <li class="row-between review-row">
+          <span>{{ person.full_name }} <span class="badge">{{ t('book.type_' ~ draft.passenger_types[loop.index0]) }}</span></span>
+          <span class="mono small muted">{{ person.id_number|mask_id }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+    <p class="small muted mt-3 mb-0">{{ draft.contact.email }} · {{ draft.contact.phone }}</p>
+  </section>
+
+  <section class="card mb-4">
+    <h2 class="card-title">{{ t('book.fare_rules') }}</h2>
+    {% for item in rules %}
+      <div class="review-row">
+        <strong class="mono">{{ item.flight.flight_number }}</strong>
+        <span class="badge badge-info">{{ item.family }}</span>
+        <span class="small muted">{{ item.rules.summary }}</span>
+      </div>
+    {% endfor %}
+    <p class="xs muted mt-3 mb-0">{{ t('book.rules_note') }}</p>
+  </section>
+
+  <section class="card mb-4" aria-labelledby="promo-title">
+    <h2 class="card-title" id="promo-title">{{ t('book.promo') }}</h2>
+    {% if draft.promo %}
+      <form method="post" class="row-between">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="remove_promo">
+        <span class="badge badge-success mono">{{ draft.promo }}</span>
+        <span class="small">{{ quote.promo_message }}</span>
+        <button class="btn btn-secondary btn-sm" type="submit">{{ t('book.remove_promo') }}</button>
+      </form>
+    {% else %}
+      <form method="post" class="promo-form">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="apply_promo">
+        <label class="visually-hidden" for="promo-code">{{ t('book.promo') }}</label>
+        <input class="input mono" id="promo-code" name="promo" maxlength="20" autocomplete="off" placeholder="KARIBU10">
+        <button class="btn btn-secondary" type="submit">{{ t('book.apply') }}</button>
+      </form>
+    {% endif %}
+  </section>
+
+  <div class="form-actions">
+    <a class="btn btn-secondary" href="{{ url_for('booking.extras') }}">{{ t('common.back') }}</a>
+  </div>
+{% endblock %}

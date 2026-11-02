@@ -1,0 +1,34 @@
+{# A seat map drawn from the aircraft layout. Buttons drive the <select> elements,
+   which remain the submitted value and the fallback when JavaScript is off. #}
+{% macro seat_grid(map, label) %}
+  <div class="seat-legend small" aria-hidden="true">
+    <span><i class="seat-key"></i>{{ t('seat.free') }}</span>
+    <span><i class="seat-key seat-key-paid"></i>{{ t('seat.paid') }}</span>
+    <span><i class="seat-key seat-key-exit"></i>{{ t('seat.exit') }}</span>
+    <span><i class="seat-key seat-key-taken"></i>{{ t('seat.taken') }}</span>
+    <span><i class="seat-key seat-key-selected"></i>{{ t('seat.yours') }}</span>
+  </div>
+  <div class="fuselage" role="group" aria-label="{{ label }}" data-seat-grid>
+    <div class="seat-row seat-columns" aria-hidden="true">
+      {% for column in map.columns %}
+        {% if column == '|' %}<span class="seat-aisle"></span>{% else %}<span class="seat-column">{{ column }}</span>{% endif %}
+      {% endfor %}
+    </div>
+    {% for row in map.rows %}
+      <div class="seat-row{% if row.is_exit %} is-exit{% endif %}">
+        {% for cell in row.cells %}
+          {% if cell is none %}
+            <span class="seat-aisle" aria-hidden="true">{{ row.number }}</span>
+          {% else %}
+            <button type="button"
+              class="seat{% if cell.extra_legroom %} seat-exit{% elif cell.price %} seat-paid{% endif %}"
+              data-seat="{{ cell.code }}"
+              aria-label="{{ t('seat.label', code=cell.code) }}: {{ cell.description }}"
+              title="{{ cell.code }}{% if cell.price %} · {{ cell.price|money }}{% endif %}"
+              {%- if not cell.available %} disabled{% endif %}>{{ cell.code[-1] }}</button>
+          {% endif %}
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+{% endmacro %}

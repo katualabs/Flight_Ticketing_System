@@ -1,0 +1,48 @@
+{% extends "booking/_layout.html" %}
+{% from "macros.html" import csrf %}
+{% from "booking/_seatmap.html" import seat_grid %}
+{% block wizard %}
+  <h1>{{ t('book.seats_title') }}</h1>
+  <p class="muted">{{ t('book.seats_sub') }}</p>
+  <form method="post" data-live-quote data-quote-url="{{ url_for('booking.quote') }}">
+    {{ csrf() }}
+    <input type="hidden" name="step" value="seats">
+    {% for map in maps %}
+      {% set seg = loop.index0 %}
+      {% set flight = flights[seg] %}
+      {% set segment = draft.segments[seg] %}
+      <section class="card mb-5 seat-section" data-seatmap>
+        <h2 class="card-title">{{ flight.origin }} &rarr; {{ flight.destination }} · <span class="mono">{{ flight.flight_number }}</span></h2>
+        <p class="small muted">{{ flight.aircraft_name }} · {{ t('cabin.' ~ segment.cabin) }}</p>
+        <div class="seat-layout">
+          <div class="seat-pax-list">
+            {% for pax in seated %}
+              {% set name = 'seat_' ~ seg ~ '_' ~ pax %}
+              {% set current = draft.seats.get(seg|string, {}).get(pax|string, '') %}
+              <div class="seat-pax" data-seat-pax>
+                <label class="seat-pax-radio">
+                  <input type="radio" name="active_{{ seg }}" value="{{ pax }}"{% if loop.first %} checked{% endif %}>
+                  <span>{{ draft.passengers[pax].full_name }}</span>
+                </label>
+                <label class="visually-hidden" for="{{ name }}">{{ t('seat.choose_for', name=draft.passengers[pax].full_name) }}</label>
+                <select class="select" id="{{ name }}" name="{{ name }}">
+                  <option value="">{{ t('seat.auto') }}</option>
+                  {% for row in map.rows %}{% for cell in row.cells if cell and cell.available %}
+                    <option value="{{ cell.code }}"{% if cell.code == current %} selected{% endif %}>{{ cell.code }}{% if cell.price %} (+{{ cell.price|money }}){% endif %}</option>
+                  {% endfor %}{% endfor %}
+                </select>
+                {% if errors.get(name) %}<span class="field-error">{{ errors[name] }}</span>{% endif %}
+              </div>
+            {% endfor %}
+            <p class="xs muted mb-0">{{ t('seat.keyboard_hint') }}</p>
+          </div>
+          {{ seat_grid(map, flight.flight_number ~ ' ' ~ t('book.step_seats')) }}
+        </div>
+      </section>
+    {% endfor %}
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="{{ url_for('booking.passengers') }}">{{ t('common.back') }}</a>
+      <button class="btn btn-primary btn-lg" type="submit">{{ t('book.to_extras') }}</button>
+    </div>
+  </form>
+{% endblock %}

@@ -53,6 +53,12 @@ def format_duration(minutes: int | None) -> str:
     return f"{hours}h {mins:02d}m" if mins else f"{hours}h"
 
 
+def mask_id(value: str | None) -> str:
+    """Show only the end of an ID number on anything that might be seen or printed."""
+    text = value or ""
+    return "\u2022" * max(len(text) - 3, 3) + text[-3:]
+
+
 STATUS_BADGES = {
     "Scheduled": "badge-info",
     "On time": "badge-success",
@@ -81,6 +87,7 @@ def init_app(app: Flask) -> None:
         datetime=format_datetime,
         duration=format_duration,
         status_badge=status_badge,
+        mask_id=mask_id,
     )
     app.jinja_env.globals.update(t=i18n.t, today=clock.today)
     app.jinja_env.trim_blocks = True

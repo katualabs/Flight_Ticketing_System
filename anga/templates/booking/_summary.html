@@ -1,0 +1,20 @@
+<h2 class="card-title">{{ t('book.summary') }}</h2>
+<dl class="summary-lines">
+  {% for line in quote.fare_lines %}
+    <div><dt>{{ line.label }}</dt><dd>{{ line.amount|money }}</dd></div>
+  {% endfor %}
+  {% for line in quote.seat_lines %}
+    <div><dt>{{ line.label }}</dt><dd>{{ line.amount|money }}</dd></div>
+  {% endfor %}
+  {% for line in quote.extra_lines %}
+    <div><dt>{{ line.label }}</dt><dd>{{ line.amount|money }}</dd></div>
+  {% endfor %}
+  {% if quote.discount %}
+    <div class="summary-discount"><dt>{{ t('book.discount') }} ({{ quote.promo_code }})</dt><dd>&minus;{{ quote.discount|money }}</dd></div>
+  {% endif %}
+</dl>
+<div class="summary-total">
+  <span>{{ t('book.total') }}</span>
+  <strong>{{ quote.total|money }}</strong>
+</div>
+{% if current_currency == 'USD' %}<p class="xs muted mt-3 mb-0">{{ t('book.charged_in_ksh', amount=quote.total|ksh) }}</p>{% endif %}

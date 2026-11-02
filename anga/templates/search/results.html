@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "search/_form.html" import search_form %}
 {% from "search/_flight.html" import flight_card %}
-{% from "macros.html" import empty_state %}
+{% from "macros.html" import csrf, empty_state %}
 {% block title %}{{ t('search.results_title') }}{% endblock %}
 {% block content %}
   {% set form_values = args %}
@@ -60,11 +60,17 @@
         </form>
       </aside>
 
-      <div class="results-list">
+      <form class="results-list" method="post" action="{{ url_for('booking.start') }}" data-fare-options>
+        {{ csrf() }}
+        <input type="hidden" name="trip" value="{{ query['trip'] }}">
+        <input type="hidden" name="adults" value="{{ query['adults'] }}">
+        <input type="hidden" name="children" value="{{ query['children'] }}">
+        <input type="hidden" name="infants" value="{{ query['infants'] }}">
+        <input type="hidden" name="back" value="{{ request.full_path }}">
         {% if outbound %}
           <section aria-labelledby="outbound-title">
             <h2 id="outbound-title">{{ t('search.outbound') }} · {{ query['depart']|date }}</h2>
-            {% for option in outbound %}{{ flight_card(option, 'outbound_fare', selectable=false) }}{% endfor %}
+            {% for option in outbound %}{{ flight_card(option, 'outbound_fare') }}{% endfor %}
           </section>
         {% else %}
           {% call empty_state(t('search.none_title'), t('search.none_body'), 'search') %}
@@ -82,13 +88,23 @@
         {% if query['trip'] == 'round_trip' %}
           <section class="mt-6" aria-labelledby="return-title">
             <h2 id="return-title">{{ t('search.return_flights') }} · {{ query['return']|date }}</h2>
-            {% for option in inbound %}{{ flight_card(option, 'return_fare', selectable=false) }}
+            {% for option in inbound %}{{ flight_card(option, 'return_fare') }}
             {% else %}
               {{ empty_state(t('search.none_return_title'), t('search.none_return_body'), 'search') }}
             {% endfor %}
           </section>
         {% endif %}
-      </div>
+
+        {% if outbound and (query['trip'] != 'round_trip' or inbound) %}
+          <div class="select-bar">
+            <div>
+              <div class="small" data-selection data-empty="{{ t('search.selection_empty') }}"></div>
+              <strong class="select-total" data-selection-total></strong>
+            </div>
+            <button class="btn btn-primary btn-lg" type="submit">{{ t('search.continue') }}</button>
+          </div>
+        {% endif %}
+      </form>
     </div>
   {% endif %}
 {% endblock %}
