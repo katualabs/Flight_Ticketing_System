@@ -1,0 +1,23 @@
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="brand" href="{{ url_for('public.home') }}">
+      <img class="brand-light" src="{{ url_for('static', filename='images/logo.svg') }}" alt="" width="34" height="34">
+      <img class="brand-dark" src="{{ url_for('static', filename='images/logo-light.svg') }}" alt="" width="34" height="34">
+      <span>Anga Air</span>
+    </a>
+    <nav id="main-nav" class="main-nav" aria-label="Main">
+      {% set nav_links = [
+        ('public.home', t('nav.book')),
+        ('public.about', t('nav.about')),
+        ('public.faq', t('nav.faq')),
+      ] %}
+      {% for endpoint, label in nav_links %}
+        <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="header-tools">
+      <button class="tool-button" type="button" data-theme-toggle aria-label="Toggle dark theme" hidden></button>
+      <button class="tool-button nav-toggle" type="button" data-nav-toggle aria-controls="main-nav" aria-expanded="false">{{ t('nav.menu') }}</button>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="{{ current_lang }}" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Anga Air{% endblock %} · {{ t('site.tagline') }}</title>
+  <meta name="description" content="{% block description %}Anga Air is a fictional East African airline. Search flights, pick seats, check in online and follow your flight. A portfolio demo.{% endblock %}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml">
+  <link rel="preload" href="{{ url_for('static', filename='fonts/plus-jakarta-sans-latin-variable.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pages.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/print.css') }}" media="print">
+  <script src="{{ url_for('static', filename='js/theme-init.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main">{{ t('site.skip') }}</a>
+  <div class="demo-notice" role="note">{{ t('site.demo_notice') }}</div>
+  {% include "partials/header.html" %}
+  <main id="main" tabindex="-1">
+    {% block content %}{% endblock %}
+  </main>
+  {% include "partials/footer.html" %}
+  <div class="toast-region" role="status" aria-live="polite">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="toast toast-{{ category }}">
+        <span>{{ message }}</span>
+        <button type="button" aria-label="{{ t('common.dismiss') }}">&times;</button>
+      </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

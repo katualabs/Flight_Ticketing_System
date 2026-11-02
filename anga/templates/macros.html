@@ -1,0 +1,83 @@
+{# Shared form and display components. #}
+
+{% macro csrf() %}<input type="hidden" name="_csrf" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro field(name, label, value='', type='text', errors=none, hint=none, required=false, autocomplete=none, attrs={}) %}
+  {% set message = errors.get(name) if errors else none %}
+  <div class="field{% if message %} has-error{% endif %}">
+    <label for="f-{{ name }}">{{ label }}</label>
+    <input class="input" id="f-{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value if value is not none else '' }}"
+      {%- if required %} required{% endif %}
+      {%- if autocomplete %} autocomplete="{{ autocomplete }}"{% endif %}
+      {%- if message %} aria-invalid="true" aria-describedby="e-{{ name }}"{% endif %}
+      {%- for key, val in attrs.items() %} {{ key }}="{{ val }}"{% endfor %}>
+    {% if hint %}<span class="field-hint">{{ hint }}</span>{% endif %}
+    {% if message %}<span class="field-error" id="e-{{ name }}">{{ message }}</span>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro textarea(name, label, value='', errors=none, required=false) %}
+  {% set message = errors.get(name) if errors else none %}
+  <div class="field{% if message %} has-error{% endif %}">
+    <label for="f-{{ name }}">{{ label }}</label>
+    <textarea class="textarea" id="f-{{ name }}" name="{{ name }}"{% if required %} required{% endif %}{% if message %} aria-invalid="true" aria-describedby="e-{{ name }}"{% endif %}>{{ value or '' }}</textarea>
+    {% if message %}<span class="field-error" id="e-{{ name }}">{{ message }}</span>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro select(name, label, options, selected=none, errors=none, include_blank=none) %}
+  {% set message = errors.get(name) if errors else none %}
+  <div class="field{% if message %} has-error{% endif %}">
+    <label for="f-{{ name }}">{{ label }}</label>
+    <select class="select" id="f-{{ name }}" name="{{ name }}"{% if message %} aria-invalid="true" aria-describedby="e-{{ name }}"{% endif %}>
+      {% if include_blank is not none %}<option value="">{{ include_blank }}</option>{% endif %}
+      {% for value, text in options %}
+        <option value="{{ value }}"{% if value|string == selected|string %} selected{% endif %}>{{ text }}</option>
+      {% endfor %}
+    </select>
+    {% if message %}<span class="field-error" id="e-{{ name }}">{{ message }}</span>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro stepper(name, label, value=0, min=0, max=9, hint=none) %}
+  <div class="field">
+    <label for="f-{{ name }}">{{ label }}</label>
+    <div class="stepper" data-stepper>
+      <button type="button" data-step="-1" aria-label="Decrease {{ label }}">&minus;</button>
+      <input id="f-{{ name }}" name="{{ name }}" type="number" inputmode="numeric" min="{{ min }}" max="{{ max }}" value="{{ value }}">
+      <button type="button" data-step="1" aria-label="Increase {{ label }}">+</button>
+    </div>
+    {% if hint %}<span class="field-hint">{{ hint }}</span>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro empty_state(title, body, image='flight', action_url=none, action_label=none) %}
+  <div class="empty-state">
+    <img src="{{ url_for('static', filename='images/empty/' ~ image ~ '.svg') }}" alt="">
+    <h2>{{ title }}</h2>
+    <p class="muted">{{ body }}</p>
+    {% if action_url %}<a class="btn btn-primary" href="{{ action_url }}">{{ action_label }}</a>{% endif %}
+    {{ caller() if caller }}
+  </div>
+{% endmacro %}
+
+{% macro status_pill(status) %}<span class="badge {{ status|status_badge }}">{{ status }}</span>{% endmacro %}
+
+{% macro page_header(title, subtitle=none) %}
+  <header class="page-header">
+    <div class="container">
+      <h1>{{ title }}</h1>
+      {% if subtitle %}<p>{{ subtitle }}</p>{% endif %}
+    </div>
+  </header>
+{% endmacro %}
+
+{% macro pagination(page, pages, endpoint, args={}) %}
+  {% if pages > 1 %}
+    <nav class="pagination" aria-label="Pagination">
+      {% if page > 1 %}<a class="chip" href="{{ url_for(endpoint, page=page - 1, **args) }}">&larr; Previous</a>{% endif %}
+      <span class="small muted">Page {{ page }} of {{ pages }}</span>
+      {% if page < pages %}<a class="chip" href="{{ url_for(endpoint, page=page + 1, **args) }}">Next &rarr;</a>{% endif %}
+    </nav>
+  {% endif %}
+{% endmacro %}

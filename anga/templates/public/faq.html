@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header %}
+{% block title %}FAQ{% endblock %}
+{% block content %}
+  {{ page_header(t('nav.faq'), 'Short answers to common questions.') }}
+  <section class="section container-narrow">
+    <div class="accordion">
+      {% set faqs = [
+        ('Is this a real airline?', 'No. Anga Air is fictional and this site is a software portfolio project. Nothing you book here is real, and no money ever moves.'),
+        ('What is the difference between Lite, Classic and Flex?', 'Lite includes a cabin bag only, with no changes or refund. Classic adds one checked bag, lets you change for KSh 3,000 plus any fare difference, and refunds 50% on cancellation. Flex includes two checked bags, free changes and a full refund.'),
+        ('When can I check in online?', 'Check-in opens 48 hours before departure and closes 1 hour before it.'),
+        ('How do I pay with M-Pesa here?', 'Enter any Kenyan phone number and the site simulates the STK push. Numbers ending in 000 simulate a failed payment, so you can see what happens.'),
+        ('Which card can I use?', 'Only the test number 4242 4242 4242 4242 is accepted. Please never enter a real card on a demo site. Only the last four digits are kept.'),
+        ('What does “Pay later” do?', 'Your seats are held for 24 hours with the booking marked Pending. If it is not paid by then, it expires and the seats are released.'),
+        ('Why did the price change between two searches?', 'Fares rise at weekends and as a cabin fills past 60% and 85%. If the price moves before you pay, you see the new one before you are charged.'),
+        ('How do Anga Miles work?', 'Earn 1 mile for every KSh 100 on confirmed bookings when logged in. Reach 500 miles for Silver and 2,000 for Gold.'),
+      ] %}
+      {% for question, answer in faqs %}
+        <details>
+          <summary>{{ question }}</summary>
+          <div class="accordion-body">{{ answer }}</div>
+        </details>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

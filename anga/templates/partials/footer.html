@@ -1,0 +1,40 @@
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <a class="brand" href="{{ url_for('public.home') }}">
+          <img src="{{ url_for('static', filename='images/logo-light.svg') }}" alt="" width="34" height="34">
+          <span>Anga Air</span>
+        </a>
+        <p class="footer-tagline mt-3">{{ t('footer.about_blurb') }}</p>
+      </div>
+      <div>
+        <h3>{{ t('footer.company') }}</h3>
+        <ul class="plain">
+          <li><a href="{{ url_for('public.about') }}">{{ t('nav.about') }}</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>{{ t('footer.help') }}</h3>
+        <ul class="plain">
+          <li><a href="{{ url_for('public.faq') }}">{{ t('nav.faq') }}</a></li>
+          <li><a href="{{ url_for('public.terms') }}">{{ t('footer.terms') }}</a></li>
+          <li><a href="{{ url_for('public.privacy') }}">{{ t('footer.privacy') }}</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>{{ t('footer.contact') }}</h3>
+        <ul class="plain">
+          <li>hello@anga.example</li>
+          <li>+254 700 000 000 (fictional)</li>
+          <li><a href="https://github.com/katualabs" rel="noopener">GitHub</a></li>
+          <li><a href="https://katualabs.github.io/my-personal-portfolio/" rel="noopener">Portfolio</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>{{ t('footer.rights') }}</span>
+      <span>{{ t('site.demo_notice') }}</span>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header %}
+{% block title %}Privacy{% endblock %}
+{% block content %}
+  {{ page_header('Privacy', 'What this demo keeps, and why.') }}
+  <section class="section container-narrow stack">
+    <p>This is a portfolio project, so please use made-up details rather than your own.</p>
+    <h2>What is stored</h2>
+    <p>Anything you type into a form is stored in the site's database so the features can work: names, email addresses and booking details. Passwords are stored only as salted hashes. For the demo card, only the last four digits are kept.</p>
+    <h2>Emails</h2>
+    <p>No email is ever sent. Confirmation messages are written to a simulated outbox that staff accounts can read.</p>
+    <h2>Cookies</h2>
+    <p>One functional cookie keeps you signed in and holds your language and currency choice. Your theme preference stays in your browser. There are no analytics or advertising trackers.</p>
+  </section>
+{% endblock %}

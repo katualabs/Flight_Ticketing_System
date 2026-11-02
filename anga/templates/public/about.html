@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header %}
+{% block title %}About{% endblock %}
+{% block content %}
+  {{ page_header('About Anga Air', '“Anga” is Swahili for sky.') }}
+  <section class="section container-narrow stack">
+    <p>Anga Air is a fictional East African regional airline, hubbed in Nairobi and flying to the Kenyan coast, the lake region and the neighbouring capitals. It does not exist, and no flight here will ever leave the ground.</p>
+    <p>What does exist is the software: a complete airline booking platform with real inventory control, fare families, demand pricing, seat maps, online check-in, loyalty and an operations console. It was built by <a href="https://katualabs.github.io/my-personal-portfolio/" rel="noopener">Cyril Katua</a> as a portfolio project.</p>
+    <h2>How it is built</h2>
+    <p>Python and Flask on the server, hand-written SQL on SQLite with no ORM, and a custom design system with no CSS framework. All of the business logic lives on the server, and JavaScript only ever enhances pages that already work without it.</p>
+    <h2>Why the prices look real</h2>
+    <p>Fares change with the day of the week and with how full a cabin is, exactly as they would at a real airline. Payments, however, are entirely simulated: no money moves, and no card data is ever stored.</p>
+  </section>
+{% endblock %}

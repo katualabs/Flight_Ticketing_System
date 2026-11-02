@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Anga Air{% endblock %}
+{% block content %}
+  <section class="hero">
+    <img class="hero-art" src="{{ url_for('static', filename='images/hero.svg') }}" alt="" fetchpriority="high">
+    <div class="container hero-copy">
+      <h1>{{ t('site.tagline') }}</h1>
+    </div>
+  </section>
+{% endblock %}
