@@ -87,7 +87,7 @@
           <text class="map-label" x="612" y="400">Indian Ocean</text>
           <text class="map-label" x="210" y="190">L. Victoria</text>
           {% for route in network.routes %}
-            <a class="map-route-link" href="{{ url_for('search.results', **{'from': route.origin, 'to': route.destination, 'depart': today().isoformat(), 'trip': 'one_way', 'adults': 1}) }}" data-route="{{ route.origin_city }} &rarr; {{ route.destination_city }}" data-price="{{ route.price|money }}">
+            <a class="map-route-link" href="{{ url_for('search.results', **{'from': route.origin, 'to': route.destination, 'depart': route.date, 'trip': 'one_way', 'adults': 1}) }}" data-route="{{ route.origin_city }} &rarr; {{ route.destination_city }}" data-price="{{ route.price|money }}">
               <title>{{ route.origin_city }} to {{ route.destination_city }}: {{ t('home.from_price') }} {{ route.price|money }}</title>
               <path class="map-route-hit" d="{{ route.path }}"/>
               <path class="map-route" d="{{ route.path }}"/>

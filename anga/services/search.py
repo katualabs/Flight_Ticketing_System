@@ -271,10 +271,13 @@ def route_map(today: date) -> dict:
              "is_hub": airport["code"] == HUB, "price": prices.get(airport["code"])}
         )  # fmt: skip
 
+    # Each pair of airports is drawn once, reading outward from the hub where it touches it.
+    all_routes = flights_repo.distinct_routes()
+    all_routes = sorted(all_routes, key=lambda route: route["origin"] != HUB)
     routes = []
     seen = set()
-    for route in flights_repo.distinct_routes():
-        pair = tuple(sorted((route["origin"], route["destination"])))
+    for route in all_routes:
+        pair = frozenset((route["origin"], route["destination"]))
         if pair in seen:
             continue
         seen.add(pair)
@@ -291,7 +294,13 @@ def route_map(today: date) -> dict:
                     f"M{x1} {y1} Q{round((x1 + x2) / 2, 1)} "
                     f"{round((y1 + y2) / 2 - bend, 1)} {x2} {y2}"
                 ),
-                "price": prices.get(route["destination"], route["base_fare"]),
+                # Live fares are only computed from the hub. Others show the route's base fare.
+                "price": (
+                    prices.get(route["destination"], route["base_fare"])
+                    if route["origin"] == HUB
+                    else route["base_fare"]
+                ),
+                "date": (today + timedelta(days=1)).isoformat(),
             }
         )
     return {"width": MAP_WIDTH, "height": MAP_HEIGHT, "points": points, "routes": routes}

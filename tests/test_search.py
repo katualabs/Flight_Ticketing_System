@@ -206,6 +206,15 @@ def test_map_projection_stays_in_bounds(seeded):
     assert any(p["is_hub"] for p in network["points"])
 
 
+def test_map_prices_each_route_by_its_own_fare(seeded):
+    routes = {(r["origin"], r["destination"]): r for r in search.route_map(TODAY)["routes"]}
+    assert ("NBO", "DAR") in routes
+    assert ("DAR", "NBO") not in routes
+    # The hub's fare to Zanzibar must not be shown for the Mombasa to Zanzibar hop.
+    assert routes[("MBA", "ZNZ")]["price"] == 9000
+    assert routes[("NBO", "ZNZ")]["price"] >= 17500
+
+
 def test_airports_api_powers_autocomplete(client):
     payload = client.get("/api/v1/airports").get_json()
     assert payload["ok"] is True
