@@ -227,3 +227,44 @@ def generate_schedule():
         values=request.form,
         routes=ops.route_templates(),
     ), (400 if errors else 200)
+
+
+# ---------------------------------------------------------- status and manifest
+
+
+@bp.post("/flights/<int:flight_id>/status")
+@staff_required
+def update_status(flight_id: int):
+    flight = _flight_or_404(flight_id)
+    data, errors = validators.validate_flight_status(request.form)
+    if errors:
+        flash(next(iter(errors.values())), "error")
+    elif data["status"] == "Cancelled" and flight["status"] != "Cancelled":
+        # Cancelling has consequences for passengers, so it goes through its own rule.
+        try:
+            affected = ops.cancel_flight(g.user["id"], flight)
+            flash(f"Flight cancelled. {affected} booking(s) marked for rebooking.", "success")
+        except OpsError as error:
+            flash(str(error), "error")
+    else:
+        ops.update_status(g.user["id"], flight, data["status"], data["delay_minutes"], data["gate"])
+        flash("Status updated. It is live on the public board.", "success")
+    return redirect(url_for("admin.flight_detail", flight_id=flight_id))
+
+
+@bp.get("/flights/<int:flight_id>/manifest")
+@staff_required
+def manifest(flight_id: int):
+    return render_template(
+        "admin/manifest.html",
+        flight=_flight_or_404(flight_id),
+        rows=ops.manifest(flight_id),
+    )
+
+
+@bp.get("/flights/<int:flight_id>/manifest.csv")
+@staff_required
+def manifest_csv(flight_id: int):
+    flight = _flight_or_404(flight_id)
+    name = f"manifest-{flight['flight_number']}-{flight['departure_date']}.csv"
+    return _csv_response(ops.manifest_csv(flight), name)

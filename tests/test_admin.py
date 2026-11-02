@@ -446,3 +446,82 @@ def test_bulk_schedule_validation(admin, data, fragment):
 
 def test_unknown_flight_is_404(admin):
     assert admin.get("/admin/flights/999999").status_code == 404
+
+
+def test_status_change_is_public_at_once_and_audited(agent, app):
+    with app.app_context():
+        flight = get_flight(days=0)
+    response = agent.post(
+        f"/admin/flights/{flight['id']}/status",
+        data={"status": "Delayed", "delay_minutes": "35", "gate": "c7"},
+    )
+    assert response.status_code == 302
+    assert b"C7" in agent.get("/status/board/NBO").data
+    assert "flight.status" in audit_actions(app)
+
+
+def test_status_validation(agent, app):
+    with app.app_context():
+        flight = get_flight()
+    url = f"/admin/flights/{flight['id']}/status"
+    assert b"valid status" in agent.post(url, data={"status": "Lost"}, follow_redirects=True).data
+    assert (
+        b"Gates look like"
+        in agent.post(url, data={"status": "Boarding", "gate": "Z999"}, follow_redirects=True).data
+    )
+    assert (
+        b"Enter a delay"
+        in agent.post(
+            url, data={"status": "Delayed", "delay_minutes": "-1"}, follow_redirects=True
+        ).data
+    )
+
+
+def test_setting_cancelled_status_runs_the_cancellation_rule(agent, app):
+    from anga.services import booking as booking_service
+
+    with app.app_context():
+        booked = booking_service.get_by_reference("ANDEMO01")
+        flight_id = booking_service.bookings_repo.segments(booked["id"])[0]["flight_id"]
+    page = agent.post(
+        f"/admin/flights/{flight_id}/status", data={"status": "Cancelled"}, follow_redirects=True
+    )
+    assert b"marked for rebooking" in page.data
+    with app.app_context():
+        assert booking_service.get_by_reference("ANDEMO01")["needs_rebooking"] == 1
+
+
+def manifest_flight(app):
+    from anga.services import booking as booking_service
+
+    with app.app_context():
+        booked = booking_service.get_by_reference("ANDEMO01")
+        return booking_service.bookings_repo.segments(booked["id"])[0]["flight_id"]
+
+
+def test_manifest_lists_passengers_extras_and_check_in_state(agent, app):
+    flight_id = manifest_flight(app)
+    page = agent.get(f"/admin/flights/{flight_id}/manifest")
+    assert b"Wanjiru Kamau" in page.data
+    assert b"ANDEMO01" in page.data
+    assert b"Extra 23 kg bag" in page.data
+    assert b"Not yet" in page.data
+    assert b"KE29384756" not in page.data
+
+
+def test_manifest_csv_export(agent, app):
+    flight_id = manifest_flight(app)
+    response = agent.get(f"/admin/flights/{flight_id}/manifest.csv")
+    assert response.mimetype == "text/csv"
+    assert "attachment" in response.headers["Content-Disposition"]
+    body = response.get_data(as_text=True)
+    assert body.splitlines()[0].startswith("seat,name,type,reference")
+    assert "Wanjiru Kamau" in body
+    assert "KE29384756" not in body
+
+
+def test_csv_cells_cannot_inject_spreadsheet_formulas():
+    body = ops.to_csv(["a"], [["=HYPERLINK(1)"], ["+1"], ["safe"]])
+    assert "'=HYPERLINK(1)" in body
+    assert "'+1" in body
+    assert "safe" in body
