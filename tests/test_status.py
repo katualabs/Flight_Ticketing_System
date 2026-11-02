@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 from anga import clock, db
 from anga.repositories import flights as flights_repo
 from anga.repositories import messages as messages_repo
 from anga.repositories import outbox as outbox_repo
-from anga.services import status
+from anga.services import schedule, status
 from tests.helpers import TODAY, get_flight
 
 
@@ -92,6 +94,37 @@ def test_status_change_appears_on_the_public_board(client, app):
     page = client.get("/status/board/NBO")
     assert b"C9" in page.data
     assert b"+90m" in page.data
+
+
+def test_statuses_advance_with_the_clock(seeded):
+    flight = flights_repo.get_by_number("AN103", TODAY.isoformat())
+    assert flight["status"] in ("On time", "Delayed")
+    delay = flight["delay_minutes"]
+    clock.freeze(datetime(2026, 3, 2, 17, 45) + timedelta(minutes=delay))
+    schedule.advance_board(clock.now())
+    assert flights_repo.get(flight["id"])["status"] == "Departed"
+    clock.freeze(datetime(2026, 3, 2, 19, 0) + timedelta(minutes=delay))
+    schedule.advance_board(clock.now())
+    assert flights_repo.get(flight["id"])["status"] == "Landed"
+
+
+def test_simulation_never_overrides_staff(seeded):
+    flight = flights_repo.get_by_number("AN103", TODAY.isoformat())
+    flights_repo.update_status(flight["id"], "Delayed", 120, "C3")
+    clock.freeze(datetime(2026, 3, 2, 23, 0))
+    schedule.advance_board(clock.now())
+    after = flights_repo.get(flight["id"])
+    assert (after["status"], after["delay_minutes"], after["gate"]) == ("Delayed", 120, "C3")
+
+
+def test_board_stays_useful_late_at_night(seeded):
+    clock.freeze(datetime(2026, 3, 2, 23, 30))
+    schedule.advance_board(clock.now())
+    rows = status.board("NBO", "departures", clock.today())
+    assert rows
+    assert {row.flight["departure_date"] for row in rows} == {"2026-03-03"}
+    assert {row.status for row in rows} <= {"On time", "Delayed"}
+    assert all(row.gate for row in rows)
 
 
 def test_destinations_page(client):

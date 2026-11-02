@@ -19,7 +19,6 @@ from anga.services import pricing
 
 BUCKET_SHARE = {"Lite": 0.4, "Classic": 0.4, "Flex": 0.2}
 GENERATED_THROUGH_KEY = "schedule_generated_through"
-BOARD_REFRESHED_KEY = "board_refreshed_on"
 
 EXIT_ROW_PRICE = 1500
 FRONT_ROW_PRICE = 600
@@ -275,23 +274,20 @@ def bulk_generate(flight_number: str, start: date, end: date, weekdays: str) -> 
     return created, skipped
 
 
-def refresh_todays_board(now: datetime) -> None:
-    """Give today's flights plausible statuses, at most once per day.
+def advance_board(now: datetime) -> None:
+    """Move today's and tomorrow's flights along with the clock.
 
-    Only flights still at 'Scheduled' are touched, so anything operations staff
-    set by hand survives.
+    Statuses follow from the time, so the board stays alive at any hour with no
+    background worker. Flights that staff have set by hand are left untouched.
     """
-    today = now.date().isoformat()
-    if settings_repo.get(BOARD_REFRESHED_KEY) == today:
-        return
+    today = now.date()
     with transaction():
-        flights_repo.land_stale_flights(today)
-        for flight in flights_repo.on_date(today):
-            if flight["status"] != "Scheduled":
-                continue
+        flights_repo.land_stale_flights(today.isoformat())
+        dates = (today.isoformat(), (today + timedelta(days=1)).isoformat())
+        for flight in flights_repo.simulated_on_dates(dates):
             status, delay, gate = _simulated_status(flight, now)
-            flights_repo.update_status(flight["id"], status, delay, gate)
-        settings_repo.put(BOARD_REFRESHED_KEY, today)
+            if (status, delay, gate) != (flight["status"], flight["delay_minutes"], flight["gate"]):
+                flights_repo.update_simulated_status(flight["id"], status, delay, gate)
 
 
 def _simulated_status(flight: Row, now: datetime) -> tuple[str, int, str]:

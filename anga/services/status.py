@@ -12,6 +12,7 @@ from anga.repositories import flights as flights_repo
 from anga.services.booking import flight_departure
 
 BOARD_KINDS = ("departures", "arrivals")
+BOARD_KEEP_HOURS = 2
 
 
 @dataclass
@@ -86,14 +87,28 @@ def by_route(origin: str, destination: str, day: date) -> list[FlightStatus]:
     ]
 
 
-def board(airport: str, kind: str, day: date) -> list[FlightStatus]:
-    """Today's departures or arrivals, in the order a terminal screen would show them."""
-    rows = (
-        flights_repo.arrivals_to(airport, day.isoformat())
-        if kind == "arrivals"
-        else flights_repo.departures_from(airport, day.isoformat())
+def board(airport: str, kind: str, day: date, now: datetime | None = None) -> list[FlightStatus]:
+    """Departures or arrivals as a terminal screen shows them.
+
+    Flights long gone drop off and the next day's take their place, so the board
+    is useful at midnight as well as at noon.
+    """
+    now = now or clock.now()
+    fetch = flights_repo.arrivals_to if kind == "arrivals" else flights_repo.departures_from
+    rows = [
+        *fetch(airport, day.isoformat()),
+        *fetch(airport, (day + timedelta(days=1)).isoformat()),
+    ]
+    return [describe(flight, now) for flight in rows if not _long_gone(flight, now)]
+
+
+def _long_gone(flight: Row, now: datetime) -> bool:
+    if flight["status"] not in ("Landed", "Cancelled"):
+        return False
+    landed = flight_departure(flight) + timedelta(
+        minutes=flight["duration_minutes"] + flight["delay_minutes"]
     )
-    return [describe(flight) for flight in rows]
+    return now - landed > timedelta(hours=BOARD_KEEP_HOURS)
 
 
 def airport(code: str) -> Row | None:

@@ -108,6 +108,7 @@ def test_repositories_never_interpolate_request_values():
         "WATCH_SELECT",
         "NET_AMOUNT",
         "where",
+        "placeholders",
     }
     for path in (PACKAGE / "repositories").glob("*.py"):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):

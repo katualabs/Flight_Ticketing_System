@@ -28,7 +28,7 @@
             {% for item in rows %}
               <tr>
                 <td data-label="{{ t('status.time') }}" class="mono">{{ item.estimated_departure if kind == 'departures' else item.estimated_arrival }}</td>
-                <td data-label="{{ t('ticket.flight') }}" class="mono strong">{{ item.flight.flight_number }}</td>
+                <td data-label="{{ t('ticket.flight') }}" class="mono strong">{{ item.flight.flight_number }}{% if item.flight.departure_date != day.isoformat() %} <span class="xs muted">{{ item.flight.departure_date|date('%d %b') }}</span>{% endif %}</td>
                 <td data-label="{{ t('status.from_to') }}">{{ item.flight.destination_city if kind == 'departures' else item.flight.origin_city }}</td>
                 <td data-label="{{ t('ticket.gate') }}" class="mono">{{ item.gate or '—' }}</td>
                 <td data-label="{{ t('ticket.status') }}">{{ status_pill(item.status) }}{% if item.delay_minutes %} <span class="xs muted">+{{ item.delay_minutes }}m</span>{% endif %}</td>

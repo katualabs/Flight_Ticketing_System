@@ -44,7 +44,8 @@ export function initBoard() {
     try {
       const response = await fetch(board.dataset.url);
       if (!response.ok) return;
-      const { data } = await response.json();
+      const { data, meta } = await response.json();
+      const today = meta.date;
       if (!data.length) return;
       body.replaceChildren(
         ...data.map((flight) => {
@@ -55,7 +56,11 @@ export function initBoard() {
               departures ? flight.estimated_departure : flight.estimated_arrival,
               "mono",
             ),
-            cell(labels[1], flight.flight_number, "mono strong"),
+            cell(
+              labels[1],
+              flight.date === today ? flight.flight_number : `${flight.flight_number} (${flight.date.slice(5)})`,
+              "mono strong",
+            ),
             cell(labels[2], departures ? flight.destination_city : flight.origin_city),
             cell(labels[3], flight.gate || "—", "mono"),
             statusCell(labels[4], flight),

@@ -21,7 +21,6 @@ def _prepare_database() -> None:
         seed.run()
     elif seed.is_seeded():
         schedule.top_up(clock.today(), current_app.config["SCHEDULE_HORIZON_DAYS"])
-        schedule.refresh_todays_board(clock.now())
 
 
 def init_app(app: Flask) -> None:
@@ -38,10 +37,11 @@ def init_app(app: Flask) -> None:
 
     @app.before_request
     def _periodic_cleanup() -> None:
-        """Expire unpaid holds at most once a minute, so no cron job is required."""
+        """Expire holds and advance the board at most once a minute, with no cron job."""
         if request.endpoint == "static":
             return
         moment = time.monotonic()
         if moment - state["last_cleanup"] >= app.config["CLEANUP_INTERVAL_SECONDS"]:
             state["last_cleanup"] = moment
             booking_service.expire_holds()
+            schedule.advance_board(clock.now())

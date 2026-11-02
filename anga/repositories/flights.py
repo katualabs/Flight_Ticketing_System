@@ -174,8 +174,20 @@ def search_admin(
 
 
 def update_status(flight_id: int, status: str, delay_minutes: int, gate: str | None) -> None:
+    """A deliberate change by staff, which the simulation then leaves alone."""
     execute(
-        "UPDATE flights SET status = ?, delay_minutes = ?, gate = ? WHERE id = ?",
+        "UPDATE flights SET status = ?, delay_minutes = ?, gate = ?, status_locked = 1"
+        " WHERE id = ?",
+        (status, delay_minutes, gate, flight_id),
+    )
+
+
+def update_simulated_status(
+    flight_id: int, status: str, delay_minutes: int, gate: str | None
+) -> None:
+    execute(
+        "UPDATE flights SET status = ?, delay_minutes = ?, gate = ?"
+        " WHERE id = ? AND status_locked = 0",
         (status, delay_minutes, gate, flight_id),
     )
 
@@ -194,10 +206,20 @@ def delete(flight_id: int) -> None:
     execute("DELETE FROM flights WHERE id = ?", (flight_id,))
 
 
+def simulated_on_dates(dates: tuple[str, ...]) -> list[Row]:
+    placeholders = ", ".join("?" for _ in dates)
+    return fetch_all(
+        f"{FLIGHT_SELECT} WHERE f.departure_date IN ({placeholders})"
+        " AND f.status_locked = 0 AND f.status <> 'Cancelled'",
+        dates,
+    )
+
+
 def land_stale_flights(before_date: str) -> None:
     """Flights on past days that nobody updated have, in practice, landed."""
     execute(
         "UPDATE flights SET status = 'Landed'"
-        " WHERE departure_date < ? AND status NOT IN ('Landed', 'Cancelled')",
+        " WHERE departure_date < ? AND status NOT IN ('Landed', 'Cancelled')"
+        " AND status_locked = 0",
         (before_date,),
     )

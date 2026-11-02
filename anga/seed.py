@@ -395,7 +395,7 @@ def seed_schedule() -> int:
     today = clock.today()
     schedule.generate_history(today, current_app.config["SCHEDULE_HISTORY_DAYS"], HISTORY_ROUTES)
     created = schedule.top_up(today, current_app.config["SCHEDULE_HORIZON_DAYS"])
-    schedule.refresh_todays_board(clock.now())
+    schedule.advance_board(clock.now())
     return created
 
 
