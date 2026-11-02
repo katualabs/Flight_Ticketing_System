@@ -166,6 +166,19 @@ def _spread_sold(buckets: dict[str, int], sold: int) -> dict[str, int]:
     return result
 
 
+def fill_cabin(flight_id: int, cabin: str, leave_free: int) -> None:
+    """Sell a cabin down to its last few seats, keeping seats and buckets in step."""
+    free = seats_repo.free_in_cabin(flight_id, cabin)
+    seats_repo.block(seat["id"] for seat in free[leave_free:])
+    remaining = leave_free
+    for fare in fares_repo.for_flight(flight_id):
+        if fare["cabin"] != cabin:
+            continue
+        keep = min(remaining, fare["total_seats"])
+        fares_repo.update(fare["id"], fare["price"], fare["total_seats"], keep)
+        remaining -= keep
+
+
 def prefill_for(flight_number: str, day: date, today: date) -> float:
     """A plausible load so seat maps and demand pricing look alive.
 

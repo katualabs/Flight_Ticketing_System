@@ -40,6 +40,11 @@ def free_in_cabin(flight_id: int, cabin: str) -> list[Row]:
     )
 
 
+def block(seat_ids: Iterable[int]) -> None:
+    """Take seats out of sale without a passenger, as for a group or crew block."""
+    execute_many("UPDATE seats SET blocked = 1 WHERE id = ?", [(seat_id,) for seat_id in seat_ids])
+
+
 def claim(seat_id: int, passenger_id: int) -> bool:
     """Assign a seat only if it is still free."""
     cursor = execute(
