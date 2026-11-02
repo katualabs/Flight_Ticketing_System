@@ -7,6 +7,7 @@ from pathlib import Path
 
 from flask import Flask
 
+from anga import db
 from anga.config import CONFIGS, load_or_create_secret_key
 
 
@@ -30,6 +31,7 @@ def create_app(config_name: str | None = None, overrides: dict | None = None) ->
             raise RuntimeError("SECRET_KEY must be set in production.")
         app.config["SECRET_KEY"] = load_or_create_secret_key(instance_path)
 
+    db.init_app(app)
     _register_blueprints(app)
     return app
 
