@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, page_header %}
+{% from "booking/_seatmap.html" import seat_grid %}
+{% block title %}{{ t('manage.change_seat') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('manage.change_seat'), booking.reference ~ ' · ' ~ segment.flight_number ~ ' · ' ~ segment.origin ~ ' → ' ~ segment.destination) }}
+  <section class="section-tight container">
+    <form method="post" class="card seat-section" data-seatmap>
+      {{ csrf() }}
+      <p class="small muted">{{ t('manage.seat_rule') }}</p>
+      <div class="seat-layout">
+        <div class="seat-pax-list">
+          {% for record in records %}
+            {% set name = 'seat_' ~ record.booking_passenger_id %}
+            <div class="seat-pax" data-seat-pax>
+              <label class="seat-pax-radio">
+                <input type="radio" name="active" value="{{ record.booking_passenger_id }}"{% if loop.first %} checked{% endif %}>
+                <span>{{ record.full_name }}</span>
+              </label>
+              <label class="visually-hidden" for="{{ name }}">{{ t('seat.choose_for', name=record.full_name) }}</label>
+              <select class="select" id="{{ name }}" name="{{ name }}"{% if record.checked_in_at %} disabled{% endif %}>
+                <option value="{{ record.seat_code }}" selected>{{ record.seat_code }}</option>
+                {% for row in map.rows %}{% for cell in row.cells if cell and cell.available %}
+                  <option value="{{ cell.code }}">{{ cell.code }}{% if cell.price %} (+{{ cell.price|money }}){% endif %}</option>
+                {% endfor %}{% endfor %}
+              </select>
+              {% if record.checked_in_at %}<span class="xs muted">{{ t('manage.seat_locked') }}</span>{% endif %}
+            </div>
+          {% endfor %}
+          <p class="xs muted mb-0">{{ t('seat.keyboard_hint') }}</p>
+        </div>
+        {{ seat_grid(map, segment.flight_number ~ ' ' ~ t('book.step_seats')) }}
+      </div>
+      <div class="form-actions">
+        <a class="btn btn-secondary" href="{{ url_for('manage.itinerary', reference=booking.reference) }}">{{ t('common.back') }}</a>
+        <button class="btn btn-primary" type="submit">{{ t('manage.save_seats') }}</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

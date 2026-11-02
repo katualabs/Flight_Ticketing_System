@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, page_header, empty_state %}
+{% from "search/_flight.html" import route_line %}
+{% block title %}{{ t('manage.change_flight') }}{% endblock %}
+{% block content %}
+  {% set flight = segment.flight %}
+  {{ page_header(t('manage.change_flight'), booking.reference ~ ' · ' ~ flight.flight_number ~ ' · ' ~ flight.departure_date|date) }}
+  <section class="section-tight container-narrow">
+    {% if not allowance.allowed %}
+      <div class="alert alert-warning">{{ allowance.reason }}</div>
+      <div class="form-actions"><a class="btn btn-secondary" href="{{ url_for('manage.itinerary', reference=booking.reference) }}">{{ t('common.back') }}</a></div>
+    {% else %}
+      <p class="muted">{{ segment.rules.summary }}</p>
+      <form class="card mb-5 calendar-controls-compact" method="get">
+        <div class="field">
+          <label for="change-date">{{ t('manage.new_date') }}</label>
+          <input class="input" id="change-date" type="date" name="date" min="{{ today().isoformat() }}" value="{{ selected_date.isoformat() if selected_date else '' }}" required>
+        </div>
+        <button class="btn btn-secondary" type="submit">{{ t('manage.find_flights') }}</button>
+      </form>
+      {% if options is not none %}
+        {% for option in options %}
+          <form class="card mb-4" method="post" data-confirm="{{ t('manage.change_confirm', flight=option.flight.flight_number) }}" data-confirm-accept="{{ t('manage.change_flight') }}" data-confirm-cancel="{{ t('common.back') }}">
+            {{ csrf() }}
+            <input type="hidden" name="flight_id" value="{{ option.flight.id }}">
+            <div class="row-between mb-3">
+              <strong class="mono">{{ option.flight.flight_number }}</strong>
+              <strong>{% if option.quote.total %}{{ option.quote.total|ksh }}{% else %}{{ t('manage.free') }}{% endif %}</strong>
+            </div>
+            {{ route_line(option.flight) }}
+            {% if option.quote.fee or option.quote.difference %}
+              <p class="xs muted mt-3 mb-0">{{ t('manage.fee_breakdown', fee=option.quote.fee|ksh, difference=option.quote.difference|ksh) }}</p>
+            {% endif %}
+            <div class="form-actions"><button class="btn btn-primary btn-sm" type="submit">{{ t('manage.choose_flight') }}</button></div>
+          </form>
+        {% else %}
+          {{ empty_state(t('search.none_title'), t('manage.no_options'), 'search') }}
+        {% endfor %}
+      {% endif %}
+      <div class="form-actions"><a class="btn btn-secondary" href="{{ url_for('manage.itinerary', reference=booking.reference) }}">{{ t('common.back') }}</a></div>
+    {% endif %}
+  </section>
+{% endblock %}

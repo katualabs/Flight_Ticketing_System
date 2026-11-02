@@ -1,0 +1,6 @@
+{% extends "emails/_layout.html" %}
+{% block body %}
+  <h1 style="margin:0 0 8px;font-size:22px;">New contact message</h1>
+  <p><strong>From:</strong> {{ full_name }} &lt;{{ email }}&gt;</p>
+  <p style="white-space:pre-wrap;">{{ body }}</p>
+{% endblock %}

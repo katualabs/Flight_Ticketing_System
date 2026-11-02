@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, page_header %}
+{% block title %}{{ t('manage.add_extras') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('manage.add_extras'), booking.reference) }}
+  <section class="section-tight container-narrow">
+    {% if extras %}
+      <div class="card mb-4">
+        <h2 class="card-title">{{ t('manage.current_extras') }}</h2>
+        {% for item in extras %}
+          <div class="row-between review-row small"><span>{{ item.name }}{% if item.quantity > 1 %} ×{{ item.quantity }}{% endif %}</span><span>{{ item.line_total|ksh }}</span></div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <form class="card" method="post">
+      {{ csrf() }}
+      <div class="form-grid">
+        <div class="field">
+          <label for="extra-passenger">{{ t('ticket.passenger') }}</label>
+          <select class="select" id="extra-passenger" name="passenger_id">
+            {% for person in passengers if person.passenger_type != 'infant' %}
+              <option value="{{ person.id }}">{{ person.full_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="extra-code">{{ t('ticket.extras') }}</label>
+          <select class="select" id="extra-code" name="code">
+            {% for item in catalogue %}
+              <option value="{{ item.code }}">{{ item.name }} · {{ item.price|ksh }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="extra-quantity">{{ t('manage.quantity') }}</label>
+          <input class="input" id="extra-quantity" type="number" name="quantity" value="1" min="1" max="3">
+        </div>
+      </div>
+      <p class="xs muted mt-3">{{ t('manage.extras_note') }}</p>
+      <div class="form-actions">
+        <a class="btn btn-secondary" href="{{ url_for('manage.itinerary', reference=booking.reference) }}">{{ t('common.back') }}</a>
+        <button class="btn btn-primary" type="submit">{{ t('manage.add') }}</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

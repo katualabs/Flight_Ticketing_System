@@ -286,3 +286,27 @@ def validate_demo_card(form: Mapping, today: date) -> Result:
     if len(clean(form.get("card_name"))) < 2:
         errors["card_name"] = "Enter the name on the card."
     return {"last4": number[-4:] if not errors else None}, errors
+
+
+def validate_contact(form: Mapping) -> Result:
+    data = {
+        "full_name": clean(form.get("full_name")),
+        "email": clean(form.get("email")).lower(),
+        "subject": clean(form.get("subject")),
+        "body": clean(form.get("body")),
+    }
+    errors: dict[str, str] = {}
+    if not 2 <= len(data["full_name"]) <= MAX_NAME:
+        errors["full_name"] = "Enter your name."
+    if not is_email(data["email"]):
+        errors["email"] = "Enter a valid email address."
+    if not 3 <= len(data["subject"]) <= 120:
+        errors["subject"] = "Enter a subject of 3 to 120 characters."
+    if not 10 <= len(data["body"]) <= 4000:
+        errors["body"] = "Enter a message of 10 to 4,000 characters."
+    return data, errors
+
+
+def validate_flight_number(value: str) -> str | None:
+    number = clean(value).upper().replace(" ", "")
+    return number if FLIGHT_NUMBER_RE.match(number) else None

@@ -1016,3 +1016,24 @@ html:not(.js) .seat { cursor: default; }
   .ticket { grid-template-columns: minmax(0, 1fr); }
   .ticket-stub { border-left: 0; border-top: 2px dashed var(--border-strong); }
 }
+
+/* ---- Flight status ---- */
+.status-route {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto;
+  gap: var(--space-5);
+  align-items: center;
+}
+
+.status-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.board-table { font-size: var(--text-base); }
+
+@media (max-width: 480px) {
+  .status-route { gap: var(--space-2); }
+  .status-route .ticket-code { font-size: var(--text-xl); }
+}

@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_pill %}
+{% from "search/_flight.html" import route_line %}
+{% block title %}{{ booking.reference }}{% endblock %}
+{% block content %}
+  <header class="ticket-hero">
+    <div class="container row-between">
+      <div>
+        <p class="ticket-reference">{{ booking.reference }}</p>
+        <h1>{{ t('manage.your_trip') }}</h1>
+      </div>
+      {{ status_pill(booking.status) }}
+    </div>
+  </header>
+  <section class="section-tight container">
+    {% if booking.needs_rebooking %}
+      <div class="alert alert-warning mb-5" role="alert">{{ t('manage.rebook_notice') }}</div>
+    {% endif %}
+    <div class="row no-print mb-5">
+      {% if booking.status == 'Pending' %}
+        <a class="btn btn-primary" href="{{ url_for('booking.pay_existing', reference=booking.reference) }}">{{ t('ticket.pay_now') }} · {{ booking.total|ksh }}</a>
+      {% endif %}
+      <a class="btn btn-secondary" href="{{ url_for('booking.confirmation', reference=booking.reference) }}">{{ t('manage.view_ticket') }}</a>
+      <a class="btn btn-secondary" href="{{ url_for('manage.calendar', reference=booking.reference) }}">{{ t('manage.add_calendar') }}</a>
+      {% if booking.status != 'Cancelled' %}
+        <a class="btn btn-secondary" href="{{ url_for('manage.extras', reference=booking.reference) }}">{{ t('manage.add_extras') }}</a>
+        <a class="btn btn-danger" href="{{ url_for('manage.cancel', reference=booking.reference) }}">{{ t('manage.cancel') }}</a>
+      {% endif %}
+    </div>
+
+    {% for segment in segments %}
+      {% set flight = segment.flight %}
+      <article class="card mb-4">
+        <div class="row-between mb-3">
+          <div>
+            <span class="badge">{{ t('book.' ~ flight.direction) }}</span>
+            <strong class="mono">{{ flight.flight_number }}</strong>
+            <span class="muted small">{{ flight.departure_date|date }} · {{ t('cabin.' ~ flight.cabin) }} {{ flight.fare_family }}</span>
+          </div>
+          {{ status_pill(flight.status) }}
+        </div>
+        {{ route_line(flight) }}
+        <div class="table-wrap mt-4">
+          <table class="table table-cards">
+            <thead><tr><th>{{ t('ticket.passenger') }}</th><th>{{ t('ticket.id') }}</th><th>{{ t('ticket.seat') }}</th><th>{{ t('manage.checkin_state') }}</th></tr></thead>
+            <tbody>
+              {% for entry in segment.tickets %}
+                <tr>
+                  <td data-label="{{ t('ticket.passenger') }}">{{ entry.record.full_name }}</td>
+                  <td data-label="{{ t('ticket.id') }}" class="mono">{{ entry.record.id_number|mask_id }}</td>
+                  <td data-label="{{ t('ticket.seat') }}" class="mono">{{ entry.record.seat_code or t('ticket.lap') }}</td>
+                  <td data-label="{{ t('manage.checkin_state') }}">
+                    {% if entry.record.checked_in_at %}<span class="badge badge-success">{{ t('manage.checked_in') }}</span>{% else %}<span class="badge">{{ t('manage.not_checked_in') }}</span>{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if booking.status != 'Cancelled' %}
+          <div class="row mt-4 no-print">
+            {% if booking.status == 'Confirmed' and segment.checkin.is_open %}
+              <a class="btn btn-primary btn-sm" href="{{ url_for('manage.check_in', reference=booking.reference, segment_id=flight.segment_id) }}">{{ t('manage.check_in') }}</a>
+            {% elif segment.checkin.state == 'not_open' %}
+              <span class="small muted">{{ t('manage.checkin_opens', when=segment.checkin.opens_at|datetime) }}</span>
+            {% endif %}
+            {% if segment.checked_in %}
+              <a class="btn btn-secondary btn-sm" href="{{ url_for('manage.boarding_pass', reference=booking.reference, segment_id=flight.segment_id) }}">{{ t('manage.boarding_pass') }}</a>
+            {% endif %}
+            <a class="btn btn-secondary btn-sm" href="{{ url_for('manage.seats', reference=booking.reference, segment_id=flight.segment_id) }}">{{ t('manage.change_seat') }}</a>
+            {% if segment.change.allowed %}
+              <a class="btn btn-secondary btn-sm" href="{{ url_for('manage.change', reference=booking.reference, segment_id=flight.segment_id) }}">{{ t('manage.change_flight') }}</a>
+            {% else %}
+              <span class="small muted">{{ segment.change.reason }}</span>
+            {% endif %}
+          </div>
+        {% endif %}
+      </article>
+    {% endfor %}
+
+    <div class="grid grid-2">
+      <section class="card">
+        <h2 class="card-title">{{ t('manage.costs') }}</h2>
+        <dl class="summary-lines">
+          <div><dt>{{ t('manage.fares') }}</dt><dd>{{ booking.subtotal|ksh }}</dd></div>
+          {% if booking.seats_total %}<div><dt>{{ t('ticket.seat') }}</dt><dd>{{ booking.seats_total|ksh }}</dd></div>{% endif %}
+          {% if booking.extras_total %}<div><dt>{{ t('ticket.extras') }}</dt><dd>{{ booking.extras_total|ksh }}</dd></div>{% endif %}
+          {% if booking.changes_total %}<div><dt>{{ t('manage.changes') }}</dt><dd>{{ booking.changes_total|ksh }}</dd></div>{% endif %}
+          {% if booking.discount %}<div class="summary-discount"><dt>{{ t('book.discount') }}</dt><dd>&minus;{{ booking.discount|ksh }}</dd></div>{% endif %}
+        </dl>
+        <div class="summary-total"><span>{{ t('book.total') }}</span><strong>{{ booking.total|ksh }}</strong></div>
+      </section>
+      <section class="card">
+        <h2 class="card-title">{{ t('manage.payments') }}</h2>
+        {% for item in payments %}
+          <div class="row-between review-row small">
+            <span>{{ t('manage.method_' ~ item.method) }}{% if item.kind == 'refund' %} ({{ t('manage.refund') }}){% endif %}{% if item.card_last4 %} ···· {{ item.card_last4 }}{% endif %}</span>
+            <span><span class="badge {{ item.status|status_badge }}">{{ item.status }}</span> {{ item.amount|ksh }}</span>
+          </div>
+        {% else %}
+          <p class="muted small mb-0">{{ t('manage.no_payments') }}</p>
+        {% endfor %}
+      </section>
+    </div>
+  </section>
+{% endblock %}

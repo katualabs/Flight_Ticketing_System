@@ -9,8 +9,9 @@
       {% set nav_links = [
         ('public.home', t('nav.book')),
         ('search.calendar', t('nav.calendar')),
-        ('public.about', t('nav.about')),
-        ('public.faq', t('nav.faq')),
+        ('public.destinations', t('nav.destinations')),
+        ('manage.lookup', t('nav.manage')),
+        ('public.status', t('nav.status')),
       ] %}
       {% for endpoint, label in nav_links %}
         <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}>{{ label }}</a>

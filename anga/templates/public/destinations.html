@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header %}
+{% block title %}{{ t('nav.destinations') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('nav.destinations'), t('home.destinations_sub')) }}
+  <section class="section-tight container">
+    <div class="grid grid-3 destination-grid">
+      {% for item in destinations %}
+        <a class="destination-card card-link" href="{{ url_for('search.results', **{'from': 'NBO', 'to': item.code, 'depart': item.date, 'trip': 'one_way', 'adults': 1}) }}">
+          <img src="{{ url_for('static', filename='images/destinations/' ~ item.code|lower ~ '.svg') }}" alt="" loading="lazy" width="480" height="320">
+          <div class="destination-body">
+            <div>
+              <h2 class="card-title mb-0">{{ item.city }}</h2>
+              <span class="muted small">{{ item.country }} · <span class="mono">{{ item.code }}</span></span>
+            </div>
+            <div class="right">
+              <span class="xs muted">{{ t('home.from_price') }}</span>
+              <div class="destination-price">{{ item.price|money }}</div>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

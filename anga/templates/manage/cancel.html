@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, page_header %}
+{% block title %}{{ t('manage.cancel') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('manage.cancel'), booking.reference) }}
+  <section class="section-tight container-narrow">
+    {% if quote.allowed %}
+      <div class="card">
+        <h2 class="card-title">{{ t('manage.refund_due') }}: {{ quote.refund|ksh }}</h2>
+        <p class="muted">{{ quote.reason }}</p>
+        <dl class="dl mb-4">
+          <dt>{{ t('manage.paid') }}</dt><dd>{{ amount_paid|ksh }}</dd>
+          {% for segment in segments %}
+            <dt>{{ segment.flight.flight_number }}</dt><dd>{{ segment.flight.fare_family }}: {{ segment.rules.summary }}</dd>
+          {% endfor %}
+        </dl>
+        <p class="small">{{ t('manage.cancel_warning') }}</p>
+        <form method="post" data-confirm="{{ t('manage.cancel_confirm', amount=quote.refund|ksh) }}" data-confirm-accept="{{ t('manage.cancel_yes') }}" data-confirm-cancel="{{ t('manage.keep') }}">
+          {{ csrf() }}
+          <div class="form-actions">
+            <a class="btn btn-secondary" href="{{ url_for('manage.itinerary', reference=booking.reference) }}">{{ t('manage.keep') }}</a>
+            <button class="btn btn-danger" type="submit">{{ t('manage.cancel_yes') }}</button>
+          </div>
+        </form>
+      </div>
+    {% else %}
+      <div class="alert alert-warning">{{ quote.reason }}</div>
+      <div class="form-actions"><a class="btn btn-secondary" href="{{ url_for('manage.itinerary', reference=booking.reference) }}">{{ t('common.back') }}</a></div>
+    {% endif %}
+  </section>
+{% endblock %}

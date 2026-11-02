@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, field, textarea, page_header %}
+{% block title %}{{ t('nav.contact') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('nav.contact'), t('contact.subtitle')) }}
+  <section class="section-tight container-narrow">
+    <form class="card" method="post" novalidate>
+      {{ csrf() }}
+      <div class="form-grid">
+        {{ field('full_name', t('book.full_name'), values.get('full_name', ''), errors=errors, required=true, autocomplete='name', attrs={'maxlength': 100}) }}
+        {{ field('email', t('book.email'), values.get('email', ''), 'email', errors=errors, required=true, autocomplete='email') }}
+      </div>
+      <div class="mt-4">{{ field('subject', t('contact.subject'), values.get('subject', ''), errors=errors, required=true, attrs={'maxlength': 120}) }}</div>
+      <div class="mt-4">{{ textarea('body', t('contact.message'), values.get('body', ''), errors=errors, required=true) }}</div>
+      <div class="form-actions"><button class="btn btn-primary btn-lg" type="submit">{{ t('contact.send') }}</button></div>
+    </form>
+  </section>
+{% endblock %}

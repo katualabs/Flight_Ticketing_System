@@ -12,12 +12,16 @@
         <h3>{{ t('footer.company') }}</h3>
         <ul class="plain">
           <li><a href="{{ url_for('public.about') }}">{{ t('nav.about') }}</a></li>
+          <li><a href="{{ url_for('public.destinations') }}">{{ t('nav.destinations') }}</a></li>
+          <li><a href="{{ url_for('public.status') }}">{{ t('nav.status') }}</a></li>
         </ul>
       </div>
       <div>
         <h3>{{ t('footer.help') }}</h3>
         <ul class="plain">
           <li><a href="{{ url_for('public.faq') }}">{{ t('nav.faq') }}</a></li>
+          <li><a href="{{ url_for('public.contact') }}">{{ t('nav.contact') }}</a></li>
+          <li><a href="{{ url_for('manage.lookup') }}">{{ t('nav.manage') }}</a></li>
           <li><a href="{{ url_for('public.terms') }}">{{ t('footer.terms') }}</a></li>
           <li><a href="{{ url_for('public.privacy') }}">{{ t('footer.privacy') }}</a></li>
         </ul>

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header, status_pill %}
+{% block title %}{{ airport.city }} {{ t('status.board') }}{% endblock %}
+{% block head %}<noscript><meta http-equiv="refresh" content="60"></noscript>{% endblock %}
+{% block content %}
+  {{ page_header(airport.city ~ ' ' ~ t('status.board'), t('status.board_sub', date=day|date)) }}
+  <section class="section-tight container">
+    <div class="row-between mb-4">
+      <nav class="segmented" aria-label="{{ t('status.board') }}">
+        <a href="{{ url_for('public.board', airport=airport.code, type='departures') }}" aria-current="{{ 'true' if kind == 'departures' else 'false' }}">{{ t('status.departures') }}</a>
+        <a href="{{ url_for('public.board', airport=airport.code, type='arrivals') }}" aria-current="{{ 'true' if kind == 'arrivals' else 'false' }}">{{ t('status.arrivals') }}</a>
+      </nav>
+      <span class="small muted" data-board-updated aria-live="polite"></span>
+    </div>
+    <div class="flight-board" data-board data-url="{{ url_for('api.board', airport=airport.code, type=kind) }}" data-kind="{{ kind }}">
+      <div class="table-wrap">
+        <table class="table table-cards board-table">
+          <thead>
+            <tr>
+              <th>{{ t('status.time') }}</th>
+              <th>{{ t('ticket.flight') }}</th>
+              <th>{{ t('status.from_to') }}</th>
+              <th>{{ t('ticket.gate') }}</th>
+              <th>{{ t('ticket.status') }}</th>
+            </tr>
+          </thead>
+          <tbody data-board-body>
+            {% for item in rows %}
+              <tr>
+                <td data-label="{{ t('status.time') }}" class="mono">{{ item.estimated_departure if kind == 'departures' else item.estimated_arrival }}</td>
+                <td data-label="{{ t('ticket.flight') }}" class="mono strong">{{ item.flight.flight_number }}</td>
+                <td data-label="{{ t('status.from_to') }}">{{ item.flight.destination_city if kind == 'departures' else item.flight.origin_city }}</td>
+                <td data-label="{{ t('ticket.gate') }}" class="mono">{{ item.gate or '—' }}</td>
+                <td data-label="{{ t('ticket.status') }}">{{ status_pill(item.status) }}{% if item.delay_minutes %} <span class="xs muted">+{{ item.delay_minutes }}m</span>{% endif %}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" class="center muted">{{ t('status.none_body') }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+{% endblock %}

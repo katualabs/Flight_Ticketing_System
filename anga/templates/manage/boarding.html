@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header %}
+{% block title %}{{ t('manage.boarding_pass') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('manage.boarding_pass'), booking.reference ~ ' · ' ~ segment.flight_number) }}
+  <section class="section-tight container">
+    <div class="row no-print mb-5">
+      <button class="btn btn-primary" type="button" data-print hidden>{{ t('ticket.print') }}</button>
+      <a class="btn btn-secondary" href="{{ url_for('manage.itinerary', reference=booking.reference) }}">{{ t('common.back') }}</a>
+    </div>
+    {% for item in passes %}
+      {% set record = item.record %}
+      <article class="ticket boarding-pass" aria-label="{{ t('manage.boarding_pass') }}: {{ record.full_name }}">
+        <div class="ticket-main">
+          <div class="ticket-brand">
+            <span>Anga Air</span>
+            <span class="xs muted">{{ t('manage.boarding_pass') }}</span>
+          </div>
+          <div class="ticket-route">
+            <div class="ticket-airport">
+              <span class="ticket-code">{{ segment.origin }}</span>
+              <span class="ticket-city">{{ segment.origin_city }} · {{ segment.departure_time }}</span>
+            </div>
+            <div class="ticket-arc" aria-hidden="true">{{ segment.duration_minutes|duration }}</div>
+            <div class="ticket-airport right">
+              <span class="ticket-code">{{ segment.destination }}</span>
+              <span class="ticket-city">{{ segment.destination_city }} · {{ segment.arrival_time }}</span>
+            </div>
+          </div>
+          <div class="ticket-facts">
+            <div class="ticket-fact"><span>{{ t('ticket.passenger') }}</span><strong>{{ record.full_name }}</strong></div>
+            <div class="ticket-fact"><span>{{ t('ticket.flight') }}</span><strong class="mono">{{ segment.flight_number }}</strong></div>
+            <div class="ticket-fact"><span>{{ t('ticket.date') }}</span><strong>{{ segment.departure_date|date('%d %b %Y') }}</strong></div>
+            <div class="ticket-fact"><span>{{ t('ticket.gate') }}</span><strong class="mono">{{ segment.gate or t('manage.gate_tba') }}</strong></div>
+            <div class="ticket-fact"><span>{{ t('ticket.fare') }}</span><strong>{{ t('cabin.' ~ segment.cabin) }}</strong></div>
+          </div>
+        </div>
+        <div class="ticket-stub">
+          <div class="row-between">
+            <div><div class="xs muted">{{ t('ticket.seat') }}</div><div class="boarding-big">{{ record.seat_code or t('ticket.lap') }}</div></div>
+            <div><div class="xs muted">{{ t('manage.group') }}</div><div class="boarding-big">{{ record.boarding_group }}</div></div>
+          </div>
+          <img src="{{ item.qr }}" alt="{{ t('ticket.qr_alt', reference=booking.reference) }}" width="148" height="148">
+          <div class="xs muted">{{ t('manage.sequence') }} <strong class="mono">{{ '%03d'|format(record.boarding_sequence) }}</strong></div>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+{% endblock %}

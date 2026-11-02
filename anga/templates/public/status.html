@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header, empty_state, status_pill %}
+{% block title %}{{ t('nav.status') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('nav.status'), t('status.subtitle')) }}
+  <section class="section-tight container">
+    <div class="grid grid-2">
+      <form class="card" method="get" aria-labelledby="by-number">
+        <h2 class="card-title" id="by-number">{{ t('status.by_number') }}</h2>
+        <input type="hidden" name="mode" value="number">
+        <div class="form-grid">
+          <div class="field">
+            <label for="status-number">{{ t('ticket.flight') }}</label>
+            <input class="input mono" id="status-number" name="number" placeholder="AN101" value="{{ query.number }}" maxlength="6">
+          </div>
+          <div class="field">
+            <label for="status-date">{{ t('ticket.date') }}</label>
+            <input class="input" id="status-date" type="date" name="date" value="{{ query.date }}">
+          </div>
+        </div>
+        <div class="form-actions"><button class="btn btn-secondary" type="submit">{{ t('common.search') }}</button></div>
+      </form>
+      <form class="card" method="get" aria-labelledby="by-route">
+        <h2 class="card-title" id="by-route">{{ t('status.by_route') }}</h2>
+        <input type="hidden" name="mode" value="route">
+        <div class="form-grid">
+          <div class="field">
+            <label for="status-from">{{ t('search.from') }}</label>
+            <select class="select" id="status-from" name="from">
+              {% for airport in airports %}<option value="{{ airport.code }}"{% if airport.code == query.origin %} selected{% endif %}>{{ airport.city }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="status-to">{{ t('search.to') }}</label>
+            <select class="select" id="status-to" name="to">
+              {% for airport in airports %}<option value="{{ airport.code }}"{% if airport.code == query.destination %} selected{% endif %}>{{ airport.city }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="status-route-date">{{ t('ticket.date') }}</label>
+            <input class="input" id="status-route-date" type="date" name="date" value="{{ query.date }}">
+          </div>
+        </div>
+        <div class="form-actions"><button class="btn btn-secondary" type="submit">{{ t('common.search') }}</button></div>
+      </form>
+    </div>
+
+    {% if searched %}
+      <div class="mt-6">
+        {% for item in results %}
+          <article class="card mb-4 status-card">
+            <div class="row-between mb-3">
+              <div>
+                <strong class="mono">{{ item.flight.flight_number }}</strong>
+                <span class="muted small">{{ item.flight.departure_date|date }}</span>
+              </div>
+              {{ status_pill(item.status) }}
+            </div>
+            <div class="status-route">
+              <div>
+                <div class="ticket-code">{{ item.flight.origin }}</div>
+                <div class="small muted">{{ item.flight.origin_city }}</div>
+                <div class="strong mono">{{ item.estimated_departure }}</div>
+                {% if item.delay_minutes %}<div class="xs muted">{{ t('status.scheduled') }} {{ item.flight.departure_time }}</div>{% endif %}
+              </div>
+              <div class="status-progress">
+                <progress max="100" value="{{ item.progress }}" aria-label="{{ t('status.progress') }}">{{ item.progress }}%</progress>
+                <div class="xs muted center">
+                  {% if item.delay_minutes %}{{ t('status.delayed_by', minutes=item.delay_minutes) }} · {% endif %}{{ t('ticket.gate') }} <span class="mono">{{ item.gate or t('manage.gate_tba') }}</span>
+                </div>
+              </div>
+              <div class="right">
+                <div class="ticket-code">{{ item.flight.destination }}</div>
+                <div class="small muted">{{ item.flight.destination_city }}</div>
+                <div class="strong mono">{{ item.estimated_arrival }}</div>
+              </div>
+            </div>
+          </article>
+        {% else %}
+          {{ empty_state(t('status.none_title'), t('status.none_body'), 'search') }}
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <p class="mt-6"><a class="btn btn-primary" href="{{ url_for('public.board', airport='NBO') }}">{{ t('status.see_board') }} &rarr;</a></p>
+  </section>
+{% endblock %}

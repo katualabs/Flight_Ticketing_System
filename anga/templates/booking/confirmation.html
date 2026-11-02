@@ -22,6 +22,8 @@
         <a class="btn btn-primary" href="{{ url_for('booking.pay_existing', reference=booking.reference) }}">{{ t('ticket.pay_now') }} · {{ booking.total|ksh }}</a>
       {% endif %}
       <button class="btn btn-secondary" type="button" data-print hidden>{{ t('ticket.print') }}</button>
+      <a class="btn btn-secondary" href="{{ url_for('manage.calendar', reference=booking.reference) }}">{{ t('manage.add_calendar') }}</a>
+      <a class="btn btn-secondary" href="{{ url_for('manage.itinerary', reference=booking.reference) }}">{{ t('nav.manage') }}</a>
     </div>
     {% for segment in segments %}
       {% for entry in segment.tickets %}
