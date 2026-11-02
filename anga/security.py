@@ -63,9 +63,9 @@ def _load_user() -> None:
 
 
 def _apply_headers(response):
-    response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
+    response.headers.setdefault("Content-Security-Policy", CONTENT_SECURITY_POLICY)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = PERMISSIONS_POLICY
     if request.path.startswith(NO_STORE_PREFIXES):

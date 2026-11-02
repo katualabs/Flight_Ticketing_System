@@ -30,6 +30,7 @@ TIMES_OF_DAY = ("morning", "afternoon", "evening")
 MAX_PASSENGERS = 9
 MAX_NAME = 100
 MAX_EXTRA_BAGS = 3
+MAX_BULK_DAYS = 120
 
 
 def clean(value: object) -> str:
@@ -387,3 +388,157 @@ def validate_traveller(form: Mapping) -> Result:
     if birth and parse_date(birth) is None:
         errors["date_of_birth"] = "Enter a valid date."
     return {"full_name": full_name, "id_number": id_number, "date_of_birth": birth or None}, errors
+
+
+FLIGHT_STATUSES = ("Scheduled", "On time", "Delayed", "Boarding", "Departed", "Landed", "Cancelled")
+GATE_RE = re.compile(r"^[A-Z][0-9]{1,2}$")
+MAX_FARE = 2_000_000
+
+
+def validate_flight(form: Mapping, today: date) -> Result:
+    data = {
+        "flight_number": clean(form.get("flight_number")).upper(),
+        "origin": clean(form.get("origin")).upper(),
+        "destination": clean(form.get("destination")).upper(),
+        "departure_date": parse_date(clean(form.get("departure_date"))),
+        "departure_time": clean(form.get("departure_time")),
+        "duration_minutes": parse_int(form.get("duration_minutes")),
+        "aircraft_code": clean(form.get("aircraft_code")),
+        "base_fare": parse_int(form.get("base_fare")),
+    }
+    errors: dict[str, str] = {}
+    if not FLIGHT_NUMBER_RE.match(data["flight_number"]):
+        errors["flight_number"] = "Flight numbers look like AN101."
+    if not AIRPORT_RE.match(data["origin"]):
+        errors["origin"] = "Choose an origin."
+    if not AIRPORT_RE.match(data["destination"]) or data["destination"] == data["origin"]:
+        errors["destination"] = "Choose a different destination."
+    if data["departure_date"] is None or data["departure_date"] < today:
+        errors["departure_date"] = "Choose a date from today onwards."
+    if not TIME_RE.match(data["departure_time"]):
+        errors["departure_time"] = "Enter the time as HH:MM."
+    if data["duration_minutes"] is None or not 0 < data["duration_minutes"] <= 1440:
+        errors["duration_minutes"] = "Enter a duration in minutes."
+    if not data["aircraft_code"]:
+        errors["aircraft_code"] = "Choose an aircraft."
+    if data["base_fare"] is None or not 0 < data["base_fare"] <= MAX_FARE:
+        errors["base_fare"] = "Enter a base fare in shillings."
+    return data, errors
+
+
+def validate_fare(form: Mapping) -> Result:
+    data = {
+        "price": parse_int(form.get("price")),
+        "total_seats": parse_int(form.get("total_seats")),
+        "available_seats": parse_int(form.get("available_seats")),
+    }
+    errors: dict[str, str] = {}
+    if data["price"] is None or not 0 < data["price"] <= MAX_FARE:
+        errors["price"] = "Enter a price in shillings."
+    if data["total_seats"] is None or data["total_seats"] < 0:
+        errors["total_seats"] = "Enter a seat count."
+    if data["available_seats"] is None or data["available_seats"] < 0:
+        errors["available_seats"] = "Enter the seats available."
+    return data, errors
+
+
+def validate_flight_status(form: Mapping) -> Result:
+    status = clean(form.get("status"))
+    delay = parse_int(form.get("delay_minutes"), 0)
+    gate = clean(form.get("gate")).upper()
+    errors: dict[str, str] = {}
+    if status not in FLIGHT_STATUSES:
+        errors["status"] = "Choose a valid status."
+    if delay is None or not 0 <= delay <= 1440:
+        errors["delay_minutes"] = "Enter a delay of 0 to 1,440 minutes."
+    if gate and not GATE_RE.match(gate):
+        errors["gate"] = "Gates look like B4."
+    return {"status": status, "delay_minutes": delay, "gate": gate or None}, errors
+
+
+def validate_bulk_schedule(form: Mapping, today: date) -> Result:
+    start = parse_date(clean(form.get("start")))
+    end = parse_date(clean(form.get("end")))
+    weekdays = "".join(sorted(set(getattr(form, "getlist", lambda _: [])("weekdays"))))
+    errors: dict[str, str] = {}
+    if not clean(form.get("flight_number")):
+        errors["flight_number"] = "Choose a route."
+    if start is None or start < today:
+        errors["start"] = "Choose a start date from today onwards."
+    if end is None or (start and end < start):
+        errors["end"] = "The end date cannot be before the start."
+    elif start and (end - start).days > MAX_BULK_DAYS:
+        errors["end"] = f"Generate at most {MAX_BULK_DAYS} days at a time."
+    if not weekdays or not set(weekdays) <= set("1234567"):
+        errors["weekdays"] = "Choose at least one weekday."
+    return {
+        "flight_number": clean(form.get("flight_number")).upper(),
+        "start": start,
+        "end": end,
+        "weekdays": weekdays,
+    }, errors
+
+
+def validate_promo(form: Mapping) -> Result:
+    code = clean(form.get("code")).upper()
+    kind = clean(form.get("kind"))
+    value = parse_int(form.get("value"))
+    scope = clean(form.get("scope")) or "all"
+    min_spend = parse_int(form.get("min_spend"), 0)
+    valid_from = parse_date(clean(form.get("valid_from")))
+    valid_to = parse_date(clean(form.get("valid_to")))
+    max_uses_text = clean(form.get("max_uses"))
+    max_uses = parse_int(max_uses_text) if max_uses_text else None
+    errors: dict[str, str] = {}
+    if not PROMO_RE.match(code):
+        errors["code"] = "Use 3 to 20 letters and numbers."
+    if kind not in ("percent", "fixed"):
+        errors["kind"] = "Choose a discount type."
+    if value is None or value <= 0 or (kind == "percent" and value > 100):
+        errors["value"] = "Enter a positive value, at most 100 for a percentage."
+    if scope not in ("all", "coastal"):
+        errors["scope"] = "Choose a valid scope."
+    if min_spend is None or min_spend < 0:
+        errors["min_spend"] = "Enter a minimum spend of zero or more."
+    if valid_from is None:
+        errors["valid_from"] = "Choose a start date."
+    if valid_to is None or (valid_from and valid_to < valid_from):
+        errors["valid_to"] = "The end date cannot be before the start."
+    if max_uses_text and (max_uses is None or max_uses <= 0):
+        errors["max_uses"] = "Enter a positive number, or leave blank for no limit."
+    return {
+        "code": code,
+        "kind": kind,
+        "value": value,
+        "scope": scope,
+        "min_spend": min_spend,
+        "valid_from": valid_from.isoformat() if valid_from else None,
+        "valid_to": valid_to.isoformat() if valid_to else None,
+        "max_uses": max_uses,
+        "active": 1 if form.get("active") else 0,
+    }, errors
+
+
+def validate_settings(form: Mapping) -> Result:
+    data = {
+        key: clean(form.get(key))
+        for key in ("usd_rate", "cancellation_hours", "checkin_open_hours", "checkin_close_hours")
+    }
+    errors: dict[str, str] = {}
+    try:
+        if not 0 < float(data["usd_rate"]) < 10_000:
+            errors["usd_rate"] = "Enter a positive exchange rate."
+    except ValueError:
+        errors["usd_rate"] = "Enter a positive exchange rate."
+    limits = {
+        "cancellation_hours": (0, 168),
+        "checkin_open_hours": (1, 336),
+        "checkin_close_hours": (0, 24),
+    }
+    for key, (low, high) in limits.items():
+        number = parse_int(data[key])
+        if number is None or not low <= number <= high:
+            errors[key] = f"Enter a whole number of hours from {low} to {high}."
+    if not errors and int(data["checkin_close_hours"]) >= int(data["checkin_open_hours"]):
+        errors["checkin_close_hours"] = "Check-in must close after it opens."
+    return data, errors
