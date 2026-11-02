@@ -146,6 +146,8 @@ DEFAULT_SETTINGS = {
 
 # Tables emptied by a reset, children before parents.
 RESET_ORDER = (
+    "price_watches",
+    "login_attempts",
     "booking_drafts",
     "audit_log",
     "outbox",
@@ -308,6 +310,10 @@ def seed_demo_bookings(users: dict[str, int]) -> None:
         reference="ANDEMO02",
     )
     payment.record_pay_later(made)
+
+    with transaction():
+        users_repo.add_traveller(wanjiru, "Daudi Kamau", "KE10293847", None)
+        users_repo.add_traveller(wanjiru, "Neema Kamau", "KE55667788", "2019-05-14")
 
     # Her past trips, which also build up a Silver-tier miles balance.
     history = current_app.config["SCHEDULE_HISTORY_DAYS"]
