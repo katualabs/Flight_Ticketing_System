@@ -17,7 +17,7 @@ from flask import (
 
 from anga import clock, validators
 from anga.security import admin_required, staff_required
-from anga.services import analytics, ops
+from anga.services import analytics, audit, ops
 from anga.services.booking import BookingError
 from anga.services.ops import OpsError
 from anga.services.payment import PaymentError
@@ -558,3 +558,41 @@ def outbox_raw(email_id: int):
     )
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     return response
+
+
+# ------------------------------------------------------------ audit and settings
+
+
+@bp.get("/audit")
+@admin_required
+def audit_log():
+    action = validators.clean(request.args.get("action")) or None
+    entity = validators.clean(request.args.get("entity")) or None
+    page = _page()
+    rows, total = audit.search(action, entity, ops.PAGE_SIZE, ops.page_offset(page))
+    return render_template(
+        "admin/audit.html",
+        rows=rows,
+        actions=audit.actions(),
+        action=action,
+        entity=entity,
+        page=page,
+        pages=ops.pages_for(total),
+    )
+
+
+@bp.route("/settings", methods=["GET", "POST"])
+@admin_required
+def settings():
+    errors: dict[str, str] = {}
+    values = ops.settings()
+    if request.method == "POST":
+        data, errors = validators.validate_settings(request.form)
+        if not errors:
+            ops.save_settings(g.user["id"], data)
+            flash("Settings saved.", "success")
+            return redirect(url_for("admin.settings"))
+        values = request.form
+    return render_template("admin/settings.html", errors=errors, values=values), (
+        400 if errors else 200
+    )

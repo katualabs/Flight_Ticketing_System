@@ -1,0 +1,16 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf, field %}
+{% block title %}Settings{% endblock %}
+{% block admin %}
+  <div class="admin-title"><h1>Settings</h1></div>
+  <form class="card" method="post" novalidate>
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ field('usd_rate', 'Shillings per US dollar', values.get('usd_rate', ''), errors=errors, required=true, hint='Display only. Bookings are charged in shillings.') }}
+      {{ field('cancellation_hours', 'No refund within (hours of departure)', values.get('cancellation_hours', ''), 'number', errors=errors, required=true) }}
+      {{ field('checkin_open_hours', 'Check-in opens (hours before)', values.get('checkin_open_hours', ''), 'number', errors=errors, required=true) }}
+      {{ field('checkin_close_hours', 'Check-in closes (hours before)', values.get('checkin_close_hours', ''), 'number', errors=errors, required=true) }}
+    </div>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Save settings</button></div>
+  </form>
+{% endblock %}

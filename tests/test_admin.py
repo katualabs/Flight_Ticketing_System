@@ -802,3 +802,63 @@ def test_emails_escape_customer_input(agent, client, app):
     with app.app_context():
         body = outbox.for_recipient("hello@anga.example")[0]["html_body"]
     assert "<script>" not in body
+
+
+def test_agents_cannot_reach_audit_or_settings(agent):
+    assert agent.get("/admin/audit").status_code == 403
+    assert agent.get("/admin/settings").status_code == 403
+    assert agent.post("/admin/settings", data={}).status_code == 403
+
+
+def test_audit_log_records_and_filters(admin, app):
+    with app.app_context():
+        flight = get_flight()
+    admin.post(f"/admin/flights/{flight['id']}/status", data={"status": "Boarding", "gate": "A1"})
+    page = admin.get("/admin/audit")
+    assert b"flight.status" in page.data
+    assert b"admin@anga.example" in page.data
+    assert b"flight.status" in admin.get("/admin/audit?action=flight.status&entity=flight").data
+    assert b'small">flight.status' not in admin.get("/admin/audit?entity=promo").data
+    assert b"flight.status" in admin.get("/admin/").data
+
+
+SETTINGS = {
+    "usd_rate": "130.5",
+    "cancellation_hours": "6",
+    "checkin_open_hours": "24",
+    "checkin_close_hours": "2",
+}
+
+
+def test_settings_change_takes_effect_and_is_audited(admin, app):
+    from anga.services import preferences
+
+    assert b"Shillings per US dollar" in admin.get("/admin/settings").data
+    assert admin.post("/admin/settings", data=SETTINGS).status_code == 302
+    with app.app_context():
+        assert preferences.usd_rate() == 130.5
+        assert preferences.cancellation_hours() == 6
+        assert preferences.checkin_open_hours() == 24
+    assert "settings.update" in audit_actions(app)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("usd_rate", "abc"),
+        ("usd_rate", "-1"),
+        ("cancellation_hours", "999"),
+        ("checkin_open_hours", "0"),
+        ("checkin_close_hours", "30"),
+    ],
+)
+def test_settings_validation(admin, field, value):
+    assert admin.post("/admin/settings", data={**SETTINGS, field: value}).status_code == 400
+
+
+def test_check_in_cannot_close_before_it_opens(admin):
+    page = admin.post(
+        "/admin/settings",
+        data={**SETTINGS, "checkin_open_hours": "2", "checkin_close_hours": "5"},
+    )
+    assert b"close after it opens" in page.data
