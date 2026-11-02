@@ -525,3 +525,83 @@ def test_csv_cells_cannot_inject_spreadsheet_formulas():
     assert "'=HYPERLINK(1)" in body
     assert "'+1" in body
     assert "safe" in body
+
+
+def test_booking_search_and_filters(agent):
+    assert b"ANDEMO01" in agent.get("/admin/bookings?q=ANDEMO").data
+    assert b"ANDEMO02" not in agent.get("/admin/bookings?status=Confirmed&q=ANDEMO").data
+    assert b"ANDEMO02" in agent.get("/admin/bookings?status=Pending").data
+    assert b"ANDEMO01" in agent.get("/admin/bookings?flight=an101&date=2026-03-03").data
+    assert b"ANDEMO01" not in agent.get("/admin/bookings?flight=AN999").data
+    assert b"ANDEMO01" in agent.get("/admin/bookings?q=wanjiru").data
+
+
+def test_booking_csv(agent):
+    response = agent.get("/admin/bookings.csv?q=ANDEMO")
+    assert response.mimetype == "text/csv"
+    assert "ANDEMO01" in response.get_data(as_text=True)
+
+
+def test_booking_detail_masks_ids(agent):
+    page = agent.get("/admin/bookings/ANDEMO01")
+    assert b"Wanjiru Kamau" in page.data
+    assert b"KE29384756" not in page.data
+    assert b"Resend confirmation" in page.data
+    assert agent.get("/admin/bookings/NOPE").status_code == 404
+
+
+def test_staff_can_open_any_customers_itinerary(agent):
+    assert agent.get("/manage/ANDEMO01").status_code == 200
+
+
+def test_confirm_pending_payment(agent, app):
+    from anga.services import booking as booking_service
+
+    assert b"Confirm payment" in agent.get("/admin/bookings/ANDEMO02").data
+    page = agent.post("/admin/bookings/ANDEMO02/confirm", follow_redirects=True)
+    assert b"Payment recorded" in page.data
+    with app.app_context():
+        assert booking_service.get_by_reference("ANDEMO02")["status"] == "Confirmed"
+    twice = agent.post("/admin/bookings/ANDEMO02/confirm", follow_redirects=True)
+    assert b"no longer be paid" in twice.data
+    assert "booking.confirm_payment" in audit_actions(app)
+
+
+def test_cancel_with_fee_follows_fare_rules(agent, app):
+    from anga.services import booking as booking_service
+
+    page = agent.post("/admin/bookings/ANDEMO01/cancel", data={"waive": "0"}, follow_redirects=True)
+    assert b"Booking cancelled" in page.data
+    with app.app_context():
+        made = booking_service.get_by_reference("ANDEMO01")
+        assert made["status"] == "Cancelled"
+        refund = db.fetch_value(
+            "SELECT amount FROM payments WHERE booking_id = ? AND kind = 'refund'", (made["id"],)
+        )
+    assert refund == round(made["subtotal"] * 0.5)
+
+
+def test_cancel_without_fee_refunds_everything(agent, app):
+    from anga.services import booking as booking_service
+
+    agent.post("/admin/bookings/ANDEMO01/cancel", data={"waive": "1"})
+    with app.app_context():
+        made = booking_service.get_by_reference("ANDEMO01")
+        assert booking_service.get_booking(made["id"])["status"] == "Cancelled"
+        refund = db.fetch_value(
+            "SELECT amount FROM payments WHERE booking_id = ? AND kind = 'refund'", (made["id"],)
+        )
+    assert refund == made["total"]
+    assert "booking.cancel" in audit_actions(app)
+
+
+def test_resend_confirmation_only_when_confirmed(agent, app):
+    from anga.repositories import outbox
+
+    with app.app_context():
+        before = len(outbox.for_recipient("wanjiru@anga.example"))
+    agent.post("/admin/bookings/ANDEMO01/resend")
+    with app.app_context():
+        assert len(outbox.for_recipient("wanjiru@anga.example")) == before + 1
+    page = agent.post("/admin/bookings/ANDEMO02/resend", follow_redirects=True)
+    assert b"Only confirmed" in page.data

@@ -1,0 +1,77 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf, status_pill %}
+{% block title %}{{ booking.reference }}{% endblock %}
+{% block admin %}
+  <div class="admin-title">
+    <div>
+      <h1 class="mono">{{ booking.reference }}</h1>
+      <span class="muted">{{ booking.contact_email }} · {{ booking.contact_phone }}</span>
+    </div>
+    <div class="row">{{ status_pill(booking.status) }}{% if booking.needs_rebooking %}<span class="badge badge-warning">Needs rebooking</span>{% endif %}</div>
+  </div>
+
+  <section class="card mb-4" aria-labelledby="actions-title">
+    <h2 class="card-title" id="actions-title">Actions</h2>
+    <div class="row">
+      {% if booking.status == 'Pending' %}
+        <form method="post" action="{{ url_for('admin.confirm_booking', reference=booking.reference) }}" data-confirm="Record payment of {{ booking.total|ksh }} for {{ booking.reference }}?">
+          {{ csrf() }}<button class="btn btn-primary btn-sm" type="submit">Confirm payment</button>
+        </form>
+      {% endif %}
+      {% if booking.status == 'Confirmed' %}
+        <form method="post" action="{{ url_for('admin.resend_booking', reference=booking.reference) }}">
+          {{ csrf() }}<button class="btn btn-secondary btn-sm" type="submit">Resend confirmation</button>
+        </form>
+      {% endif %}
+      {% if booking.status != 'Cancelled' %}
+        <form method="post" action="{{ url_for('admin.cancel_booking', reference=booking.reference) }}" data-confirm="Cancel {{ booking.reference }} under its fare rules?" data-confirm-accept="Cancel booking">
+          {{ csrf() }}<input type="hidden" name="waive" value="0"><button class="btn btn-secondary btn-sm" type="submit">Cancel with fee</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.cancel_booking', reference=booking.reference) }}" data-confirm="Cancel {{ booking.reference }} and refund all {{ amount_paid|ksh }} paid?" data-confirm-accept="Cancel and refund">
+          {{ csrf() }}<input type="hidden" name="waive" value="1"><button class="btn btn-danger btn-sm" type="submit">Cancel, no fee</button>
+        </form>
+      {% endif %}
+    </div>
+  </section>
+
+  {% for segment in segments %}
+    {% set flight = segment.flight %}
+    <section class="card mb-4">
+      <div class="row-between mb-3">
+        <strong><a class="mono" href="{{ url_for('admin.flight_detail', flight_id=flight.flight_id) }}">{{ flight.flight_number }}</a> {{ flight.origin }} &rarr; {{ flight.destination }}</strong>
+        <span class="small muted">{{ flight.departure_date|date }} · {{ flight.departure_time }} · {{ flight.cabin }} {{ flight.fare_family }}</span>
+      </div>
+      {% for entry in segment.tickets %}
+        <div class="row-between review-row small">
+          <span>{{ entry.record.full_name }} <span class="mono muted">{{ entry.record.id_number|mask_id }}</span></span>
+          <span class="mono">{{ entry.record.seat_code or 'Lap' }}{% if entry.record.checked_in_at %} · checked in{% endif %}</span>
+        </div>
+      {% endfor %}
+    </section>
+  {% endfor %}
+
+  <div class="grid grid-2">
+    <section class="card">
+      <h2 class="card-title">Charges</h2>
+      <dl class="summary-lines">
+        <div><dt>Fares</dt><dd>{{ booking.subtotal|ksh }}</dd></div>
+        <div><dt>Seats</dt><dd>{{ booking.seats_total|ksh }}</dd></div>
+        <div><dt>Extras</dt><dd>{{ booking.extras_total|ksh }}</dd></div>
+        <div><dt>Changes</dt><dd>{{ booking.changes_total|ksh }}</dd></div>
+        <div class="summary-discount"><dt>Discount</dt><dd>&minus;{{ booking.discount|ksh }}</dd></div>
+      </dl>
+      <div class="summary-total"><span>Total</span><strong>{{ booking.total|ksh }}</strong></div>
+    </section>
+    <section class="card">
+      <h2 class="card-title">Payments (net {{ amount_paid|ksh }})</h2>
+      {% for item in payments %}
+        <div class="row-between review-row small">
+          <span class="mono">{{ item.reference }}<br><span class="muted">{{ item.method }} · {{ item.kind }}{% if item.card_last4 %} · ····{{ item.card_last4 }}{% endif %}</span></span>
+          <span><span class="badge {{ item.status|status_badge }}">{{ item.status }}</span> {{ item.amount|ksh }}</span>
+        </div>
+      {% else %}
+        <p class="muted small mb-0">No payments yet.</p>
+      {% endfor %}
+    </section>
+  </div>
+{% endblock %}

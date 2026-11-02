@@ -1,0 +1,40 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import pagination, status_pill %}
+{% block title %}Bookings{% endblock %}
+{% block admin %}
+  <div class="admin-title">
+    <h1>Bookings</h1>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.bookings_csv', **active) }}">Export CSV</a>
+  </div>
+  <form class="filter-bar" method="get" data-auto-submit>
+    <div class="field"><label for="b-q">Reference or email</label><input class="input" id="b-q" name="q" value="{{ filters.q or '' }}"></div>
+    <div class="field"><label for="b-flight">Flight</label><input class="input mono" id="b-flight" name="flight" value="{{ filters.flight or '' }}" placeholder="AN101"></div>
+    <div class="field"><label for="b-date">Travel date</label><input class="input" id="b-date" type="date" name="date" value="{{ filters.date or '' }}"></div>
+    <div class="field"><label for="b-status">Status</label>
+      <select class="select" id="b-status" name="status"><option value="">Any</option>{% for status in ('Pending', 'Confirmed', 'Cancelled') %}<option value="{{ status }}"{% if filters.status == status %} selected{% endif %}>{{ status }}</option>{% endfor %}</select>
+    </div>
+    <button class="btn btn-secondary" type="submit">Filter</button>
+  </form>
+  <p class="small muted">{{ '{:,}'.format(total) }} bookings</p>
+  <div class="table-wrap">
+    <table class="table table-cards">
+      <thead><tr><th>Reference</th><th>Contact</th><th>Flights</th><th>Pax</th><th class="num">Total</th><th>Status</th><th>Booked</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td data-label="Reference"><a class="mono strong" href="{{ url_for('admin.booking_detail', reference=row.reference) }}">{{ row.reference }}</a></td>
+            <td data-label="Contact" class="small">{{ row.contact_email }}</td>
+            <td data-label="Flights" class="mono small">{{ row.flights }}</td>
+            <td data-label="Pax">{{ row.passengers }}</td>
+            <td data-label="Total" class="num">{{ row.total|ksh }}</td>
+            <td data-label="Status">{{ status_pill(row.status) }}{% if row.needs_rebooking %} <span class="badge badge-warning">Rebook</span>{% endif %}</td>
+            <td data-label="Booked" class="small">{{ row.created_at|date('%d %b %Y') }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="center muted">No bookings match these filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pagination(page, pages, 'admin.bookings', active) }}
+{% endblock %}

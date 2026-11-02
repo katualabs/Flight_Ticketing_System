@@ -18,7 +18,9 @@ from flask import (
 from anga import clock, validators
 from anga.security import admin_required, staff_required
 from anga.services import analytics, ops
+from anga.services.booking import BookingError
 from anga.services.ops import OpsError
+from anga.services.payment import PaymentError
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -268,3 +270,97 @@ def manifest_csv(flight_id: int):
     flight = _flight_or_404(flight_id)
     name = f"manifest-{flight['flight_number']}-{flight['departure_date']}.csv"
     return _csv_response(ops.manifest_csv(flight), name)
+
+
+# --------------------------------------------------------------------- bookings
+
+
+def _booking_filters() -> dict:
+    args = request.args
+    return {
+        "q": validators.clean(args.get("q")) or None,
+        "status": validators.clean(args.get("status")) or None,
+        "flight": validators.clean(args.get("flight")).upper() or None,
+        "date": validators.clean(args.get("date")) or None,
+    }
+
+
+@bp.get("/bookings")
+@staff_required
+def bookings():
+    filters = _booking_filters()
+    page = _page()
+    rows, total = ops.search_bookings(
+        filters["q"], filters["status"], filters["flight"], filters["date"], page
+    )
+    return render_template(
+        "admin/bookings.html",
+        rows=rows,
+        total=total,
+        page=page,
+        pages=ops.pages_for(total),
+        filters=filters,
+        active=_active(filters),
+    )
+
+
+@bp.get("/bookings.csv")
+@staff_required
+def bookings_csv():
+    filters = _booking_filters()
+    body = ops.bookings_csv(filters["q"], filters["status"], filters["flight"], filters["date"])
+    return _csv_response(body, "bookings.csv")
+
+
+def _booking_detail_or_404(reference: str) -> dict:
+    detail = ops.booking_detail(reference.upper())
+    if detail is None:
+        abort(404)
+    return detail
+
+
+@bp.get("/bookings/<reference>")
+@staff_required
+def booking_detail(reference: str):
+    return render_template("admin/booking_detail.html", **_booking_detail_or_404(reference))
+
+
+def _booking_action(reference: str, action, success: str):
+    try:
+        result = action()
+        flash(success.format(result=result), "success")
+    except (OpsError, BookingError, PaymentError) as error:
+        flash(str(error), "error")
+    return redirect(url_for("admin.booking_detail", reference=reference))
+
+
+@bp.post("/bookings/<reference>/confirm")
+@staff_required
+def confirm_booking(reference: str):
+    booking = _booking_detail_or_404(reference)["booking"]
+    return _booking_action(
+        reference, lambda: ops.confirm_payment(g.user["id"], booking), "Payment recorded."
+    )
+
+
+@bp.post("/bookings/<reference>/cancel")
+@staff_required
+def cancel_booking(reference: str):
+    booking = _booking_detail_or_404(reference)["booking"]
+    waive = request.form.get("waive") == "1"
+    return _booking_action(
+        reference,
+        lambda: f"{ops.cancel_booking(g.user['id'], booking, waive):,}",
+        "Booking cancelled. Refund: KSh {result}.",
+    )
+
+
+@bp.post("/bookings/<reference>/resend")
+@staff_required
+def resend_booking(reference: str):
+    booking = _booking_detail_or_404(reference)["booking"]
+    return _booking_action(
+        reference,
+        lambda: ops.resend_confirmation(g.user["id"], booking),
+        "Confirmation written to the outbox again.",
+    )
