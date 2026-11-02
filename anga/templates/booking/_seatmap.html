@@ -1,6 +1,7 @@
 {# A seat map drawn from the aircraft layout. Buttons drive the <select> elements,
    which remain the submitted value and the fallback when JavaScript is off. #}
 {% macro seat_grid(map, label) %}
+  <div class="seat-map-panel">
   <div class="seat-legend small" aria-hidden="true">
     <span><i class="seat-key"></i>{{ t('seat.free') }}</span>
     <span><i class="seat-key seat-key-paid"></i>{{ t('seat.paid') }}</span>
@@ -30,5 +31,6 @@
         {% endfor %}
       </div>
     {% endfor %}
+  </div>
   </div>
 {% endmacro %}

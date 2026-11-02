@@ -697,9 +697,16 @@ a.calendar-cell:hover {
 /* ---- Seat map ---- */
 .seat-layout {
   display: grid;
-  grid-template-columns: minmax(200px, 1fr) minmax(0, auto);
+  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
   gap: var(--space-5);
   align-items: start;
+}
+
+.seat-map-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
 }
 
 .seat-pax-list {
@@ -731,7 +738,6 @@ a.calendar-cell:hover {
 html:not(.js) .seat-pax-radio input { display: none; }
 
 .seat-legend {
-  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
