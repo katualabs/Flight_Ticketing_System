@@ -1,0 +1,69 @@
+{# The flight search card, shared by the home and results pages. #}
+{% from "macros.html" import stepper %}
+{% macro search_form(airports, values={}, errors={}, compact=false) %}
+  {% set trip = values.get('trip') or 'one_way' %}
+  <form class="search-card{% if compact %} search-card-compact{% endif %}" action="{{ url_for('search.results') }}" method="get" data-search-form>
+    <div class="row-between mb-4">
+      <fieldset class="segmented" data-trip-toggle>
+        <legend class="visually-hidden">{{ t('search.trip_type') }}</legend>
+        <label><input type="radio" name="trip" value="one_way"{% if trip == 'one_way' %} checked{% endif %}><span>{{ t('search.one_way') }}</span></label>
+        <label><input type="radio" name="trip" value="round_trip"{% if trip == 'round_trip' %} checked{% endif %}><span>{{ t('search.round_trip') }}</span></label>
+      </fieldset>
+      <div class="field search-cabin">
+        <label class="visually-hidden" for="search-cabin">{{ t('search.cabin') }}</label>
+        <select class="select" id="search-cabin" name="cabin">
+          {% for cabin in ('Economy', 'Business', 'First') %}
+            <option value="{{ cabin }}"{% if values.get('cabin') == cabin %} selected{% endif %}>{{ t('cabin.' ~ cabin) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="search-grid">
+      <div class="search-route">
+        <div class="field{% if errors.get('from') %} has-error{% endif %}" data-airport-combo>
+          <label for="search-from">{{ t('search.from') }}</label>
+          <select class="select" id="search-from" name="from">
+            <option value="">{{ t('search.choose_airport') }}</option>
+            {% for airport in airports %}
+              <option value="{{ airport.code }}"{% if (values.get('from') or 'NBO') == airport.code %} selected{% endif %}>{{ airport.city }} ({{ airport.code }})</option>
+            {% endfor %}
+          </select>
+          {% if errors.get('from') %}<span class="field-error">{{ errors['from'] }}</span>{% endif %}
+        </div>
+        <button class="swap-button" type="button" data-swap aria-label="{{ t('search.swap') }}" hidden>&#8646;</button>
+        <div class="field{% if errors.get('to') %} has-error{% endif %}" data-airport-combo>
+          <label for="search-to">{{ t('search.to') }}</label>
+          <select class="select" id="search-to" name="to">
+            <option value="">{{ t('search.choose_airport') }}</option>
+            {% for airport in airports %}
+              <option value="{{ airport.code }}"{% if values.get('to') == airport.code %} selected{% endif %}>{{ airport.city }} ({{ airport.code }})</option>
+            {% endfor %}
+          </select>
+          {% if errors.get('to') %}<span class="field-error">{{ errors['to'] }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="field{% if errors.get('depart') %} has-error{% endif %}">
+        <label for="search-depart">{{ t('search.depart') }}</label>
+        <input class="input" id="search-depart" type="date" name="depart" min="{{ today().isoformat() }}" value="{{ values.get('depart') or '' }}">
+        {% if errors.get('depart') %}<span class="field-error">{{ errors['depart'] }}</span>{% endif %}
+      </div>
+      <div class="field{% if errors.get('return') %} has-error{% endif %}" data-return-field>
+        <label for="search-return">{{ t('search.return') }}</label>
+        <input class="input" id="search-return" type="date" name="return" min="{{ today().isoformat() }}" value="{{ values.get('return') or '' }}">
+        {% if errors.get('return') %}<span class="field-error">{{ errors['return'] }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="search-footer">
+      <div class="search-pax">
+        {{ stepper('adults', t('search.adults'), values.get('adults') or 1, 1, 9, t('search.adults_hint')) }}
+        {{ stepper('children', t('search.children'), values.get('children') or 0, 0, 8, t('search.children_hint')) }}
+        {{ stepper('infants', t('search.infants'), values.get('infants') or 0, 0, 4, t('search.infants_hint')) }}
+      </div>
+      <button class="btn btn-primary btn-lg search-submit" type="submit">{{ t('search.submit') }}</button>
+    </div>
+    {% if errors.get('adults') %}<p class="field-error mt-3 mb-0">{{ errors['adults'] }}</p>{% endif %}
+    {% if errors.get('infants') %}<p class="field-error mt-3 mb-0">{{ errors['infants'] }}</p>{% endif %}
+  </form>
+{% endmacro %}

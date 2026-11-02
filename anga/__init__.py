@@ -42,6 +42,10 @@ def create_app(config_name: str | None = None, overrides: dict | None = None) ->
 
 
 def _register_blueprints(app: Flask) -> None:
+    from anga.blueprints.api import bp as api_bp
     from anga.blueprints.public import bp as public_bp
+    from anga.blueprints.search import bp as search_bp
 
     app.register_blueprint(public_bp)
+    app.register_blueprint(search_bp)
+    app.register_blueprint(api_bp)

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% from "search/_form.html" import search_form %}
+{% from "search/_flight.html" import flight_card %}
+{% from "macros.html" import empty_state %}
+{% block title %}{{ t('search.results_title') }}{% endblock %}
+{% block content %}
+  {% set form_values = args %}
+  <header class="page-header">
+    <div class="container">
+      {% if errors %}
+        <h1>{{ t('search.results_title') }}</h1>
+        <p>{{ t('search.fix_errors') }}</p>
+      {% else %}
+        <h1>{{ query['from'] }} &rarr; {{ query['to'] }}</h1>
+        <p>{{ query['depart']|date }}{% if query['return'] %} &ndash; {{ query['return']|date }}{% endif %} · {{ t('search.party_one') if query['adults'] + query['children'] == 1 else t('search.party', seats=query['adults'] + query['children']) }}{% if query['infants'] %} + {{ query['infants'] }} {{ t('search.infants')|lower }}{% endif %} · {{ t('cabin.' ~ query['cabin']) }}</p>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="container section-tight">
+    <details class="card search-edit"{% if errors %} open{% endif %}>
+      <summary class="strong">{{ t('search.edit') }}</summary>
+      <div class="mt-4">{{ search_form(airports, form_values, errors, compact=true) }}</div>
+    </details>
+  </div>
+
+  {% if not errors %}
+    <div class="container results-layout">
+      <aside class="results-filters" aria-label="{{ t('search.filters') }}">
+        <form class="card" method="get" action="{{ url_for('search.results') }}" data-auto-submit>
+          {% for key, value in args.items() if key not in ('sort', 'time', 'max_price') %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endfor %}
+          <h2 class="card-title">{{ t('search.filters') }}</h2>
+          <div class="stack">
+            <div class="field">
+              <label for="filter-sort">{{ t('search.sort_by') }}</label>
+              <select class="select" id="filter-sort" name="sort">
+                {% for value in ('price', 'departure', 'duration') %}
+                  <option value="{{ value }}"{% if filters.sort == value %} selected{% endif %}>{{ t('search.sort_' ~ value) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="filter-time">{{ t('search.time_of_day') }}</label>
+              <select class="select" id="filter-time" name="time">
+                <option value="">{{ t('search.any_time') }}</option>
+                {% for value in ('morning', 'afternoon', 'evening') %}
+                  <option value="{{ value }}"{% if filters.time == value %} selected{% endif %}>{{ t('search.time_' ~ value) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="filter-price">{{ t('search.max_price') }}</label>
+              <input class="input" id="filter-price" type="number" name="max_price" min="0" step="500" value="{{ filters.max_price or '' }}">
+            </div>
+            <button class="btn btn-secondary btn-block" type="submit">{{ t('search.apply_filters') }}</button>
+          </div>
+          <p class="small mt-4 mb-0"><a href="{{ url_for('search.calendar', **{'from': query['from'], 'to': query['to'], 'cabin': query['cabin'], 'month': query['depart'].strftime('%Y-%m')}) }}">{{ t('search.see_calendar') }} &rarr;</a></p>
+        </form>
+      </aside>
+
+      <div class="results-list">
+        {% if outbound %}
+          <section aria-labelledby="outbound-title">
+            <h2 id="outbound-title">{{ t('search.outbound') }} · {{ query['depart']|date }}</h2>
+            {% for option in outbound %}{{ flight_card(option, 'outbound_fare', selectable=false) }}{% endfor %}
+          </section>
+        {% else %}
+          {% call empty_state(t('search.none_title'), t('search.none_body'), 'search') %}
+            {% if nearby %}
+              <p class="strong mt-4">{{ t('search.nearby') }}</p>
+              <div class="row nearby-dates">
+                {% for cell in nearby %}
+                  <a class="chip" href="{{ url_for('search.results', **dict(args, depart=cell.date.isoformat())) }}">{{ cell.date|date('%a %d %b') }} · {{ cell.price|money }}</a>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endcall %}
+        {% endif %}
+
+        {% if query['trip'] == 'round_trip' %}
+          <section class="mt-6" aria-labelledby="return-title">
+            <h2 id="return-title">{{ t('search.return_flights') }} · {{ query['return']|date }}</h2>
+            {% for option in inbound %}{{ flight_card(option, 'return_fare', selectable=false) }}
+            {% else %}
+              {{ empty_state(t('search.none_return_title'), t('search.none_return_body'), 'search') }}
+            {% endfor %}
+          </section>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

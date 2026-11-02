@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header, empty_state %}
+{% block title %}{{ t('calendar.title') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('calendar.title'), t('calendar.subtitle')) }}
+  <section class="section-tight container">
+    <form class="card calendar-controls" method="get" action="{{ url_for('search.calendar') }}" data-auto-submit>
+      <div class="field">
+        <label for="cal-from">{{ t('search.from') }}</label>
+        <select class="select" id="cal-from" name="from">
+          {% for airport in airports %}<option value="{{ airport.code }}"{% if airport.code == origin %} selected{% endif %}>{{ airport.city }} ({{ airport.code }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="cal-to">{{ t('search.to') }}</label>
+        <select class="select" id="cal-to" name="to">
+          {% for airport in airports %}<option value="{{ airport.code }}"{% if airport.code == destination %} selected{% endif %}>{{ airport.city }} ({{ airport.code }})</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="cal-cabin">{{ t('search.cabin') }}</label>
+        <select class="select" id="cal-cabin" name="cabin">
+          {% for option in ('Economy', 'Business', 'First') %}<option value="{{ option }}"{% if option == cabin %} selected{% endif %}>{{ t('cabin.' ~ option) }}</option>{% endfor %}
+        </select>
+      </div>
+      <input type="hidden" name="month" value="{{ calendar.month.strftime('%Y-%m') }}">
+      <button class="btn btn-secondary" type="submit">{{ t('common.search') }}</button>
+    </form>
+
+    <div class="row-between calendar-nav mt-5">
+      {% set base = {'from': origin, 'to': destination, 'cabin': cabin} %}
+      {% if can_go_back %}<a class="chip" href="{{ url_for('search.calendar', month=calendar.previous_month.strftime('%Y-%m'), **base) }}" rel="prev">&larr; {{ calendar.previous_month|date('%B') }}</a>{% else %}<span></span>{% endif %}
+      <h2 class="mb-0">{{ calendar.month|date('%B %Y') }}</h2>
+      {% if can_go_forward %}<a class="chip" href="{{ url_for('search.calendar', month=calendar.next_month.strftime('%Y-%m'), **base) }}" rel="next">{{ calendar.next_month|date('%B') }} &rarr;</a>{% else %}<span></span>{% endif %}
+    </div>
+
+    {% if calendar.cheapest is none %}
+      <div class="mt-4">{{ empty_state(t('calendar.empty_title'), t('calendar.empty_body'), 'search') }}</div>
+    {% else %}
+      <p class="muted small center mt-3">{{ t('calendar.range', low=calendar.cheapest|money, high=calendar.dearest|money) }}</p>
+    {% endif %}
+
+    <div class="calendar-grid mt-4" role="table" aria-label="{{ calendar.month|date('%B %Y') }}">
+      <div class="calendar-row calendar-head" role="row">
+        {% for name in ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun') %}<span role="columnheader">{{ t('day.' ~ name) }}</span>{% endfor %}
+      </div>
+      {% for week in calendar.weeks %}
+        <div class="calendar-row" role="row">
+          {% for cell in week %}
+            {% if cell is none %}
+              <span class="calendar-cell is-blank" role="cell"></span>
+            {% elif cell.price is not none %}
+              <a class="calendar-cell heat-{{ cell.heat }}" role="cell" href="{{ url_for('search.results', depart=cell.day.isoformat(), trip='one_way', adults=1, **base) }}">
+                <span class="calendar-day">{{ cell.day.day }}</span>
+                <span class="calendar-price">{{ cell.price|money }}</span>
+              </a>
+            {% else %}
+              <span class="calendar-cell is-empty" role="cell"><span class="calendar-day">{{ cell.day.day }}</span></span>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="heat-legend small muted mt-4" aria-hidden="true">
+      <span>{{ t('calendar.cheaper') }}</span>
+      {% for level in range(6) %}<span class="heat-swatch heat-{{ level }}"></span>{% endfor %}
+      <span>{{ t('calendar.pricier') }}</span>
+    </div>
+  </section>
+{% endblock %}

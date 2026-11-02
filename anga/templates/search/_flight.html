@@ -1,0 +1,62 @@
+{# One flight in the results list, with a selectable card per fare family. #}
+{% from "macros.html" import status_pill %}
+{% macro route_line(flight) %}
+  <div class="route-line">
+    <div class="route-point">
+      <span class="route-time mono">{{ flight.departure_time }}</span>
+      <span class="route-code">{{ flight.origin }}</span>
+    </div>
+    <div class="route-path" aria-hidden="true">
+      <span class="route-duration">{{ flight.duration_minutes|duration }}</span>
+    </div>
+    <div class="route-point route-point-end">
+      <span class="route-time mono">{{ flight.arrival_time }}</span>
+      <span class="route-code">{{ flight.destination }}</span>
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro flight_card(option, group, selectable=true) %}
+  {% set flight = option.flight %}
+  <article class="flight-card{% if option.is_sold_out %} is-sold-out{% endif %}">
+    <header class="flight-summary">
+      {{ route_line(flight) }}
+      <div class="flight-meta">
+        <span class="mono strong">{{ flight.flight_number }}</span>
+        <span class="muted small">{{ flight.aircraft_name }}</span>
+        <span class="muted small">{{ t('search.direct') }}</span>
+      </div>
+    </header>
+    <div class="fare-grid">
+      {% for fare in option.fares %}
+        {% set available = fare.seats_left > 0 %}
+        <label class="fare-card fare-{{ fare.family|lower }}{% if not available %} is-disabled{% endif %}">
+          {% if selectable %}
+            <input type="radio" name="{{ group }}" value="{{ fare.id }}"{% if not available %} disabled{% endif %} required
+              data-price="{{ fare.price }}" data-label="{{ flight.flight_number }} · {{ fare.family }}">
+          {% endif %}
+          <span class="fare-head">
+            <span class="fare-family">{{ fare.family }}</span>
+            {% if fare.low_stock %}<span class="badge badge-warning">{{ t('search.seats_left', count=fare.seats_left) }}</span>{% endif %}
+            {% if not available %}<span class="badge badge-danger">{{ t('search.sold_out') }}</span>{% endif %}
+          </span>
+          <span class="fare-price">{{ fare.price|money }}</span>
+          <span class="fare-cabin xs muted">{{ t('cabin.' ~ fare.cabin) }}</span>
+          <ul class="fare-rules plain xs">
+            <li class="{{ 'yes' if fare.rules.bags else 'no' }}">{{ t('fare.bags_' ~ fare.rules.bags) }}</li>
+            <li class="{{ 'yes' if fare.rules.can_change else 'no' }}">
+              {% if not fare.rules.can_change %}{{ t('fare.no_changes') }}
+              {% elif fare.rules.change_fee %}{{ t('fare.change_fee', fee=fare.rules.change_fee|ksh) }}
+              {% else %}{{ t('fare.free_changes') }}{% endif %}
+            </li>
+            <li class="{{ 'yes' if fare.rules.refund_rate else 'no' }}">
+              {% if not fare.rules.refund_rate %}{{ t('fare.no_refund') }}
+              {% elif fare.rules.refund_rate < 1 %}{{ t('fare.part_refund') }}
+              {% else %}{{ t('fare.full_refund') }}{% endif %}
+            </li>
+          </ul>
+        </label>
+      {% endfor %}
+    </div>
+  </article>
+{% endmacro %}

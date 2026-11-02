@@ -1,10 +1,132 @@
 {% extends "base.html" %}
-{% block title %}Anga Air{% endblock %}
+{% from "search/_form.html" import search_form %}
+{% block title %}{{ t('home.title') }}{% endblock %}
 {% block content %}
   <section class="hero">
     <img class="hero-art" src="{{ url_for('static', filename='images/hero.svg') }}" alt="" fetchpriority="high">
     <div class="container hero-copy">
+      <p class="hero-eyebrow">{{ t('home.eyebrow') }}</p>
       <h1>{{ t('site.tagline') }}</h1>
+      <p class="hero-lead">{{ t('home.lead') }}</p>
+    </div>
+  </section>
+
+  <section class="container search-float" aria-label="{{ t('search.submit') }}">
+    {{ search_form(airports) }}
+  </section>
+
+  <section class="section container" aria-labelledby="destinations-title">
+    <div class="section-head">
+      <div>
+        <h2 id="destinations-title">{{ t('home.destinations') }}</h2>
+        <p>{{ t('home.destinations_sub') }}</p>
+      </div>
+      <a class="chip" href="{{ url_for('search.calendar') }}">{{ t('nav.calendar') }} &rarr;</a>
+    </div>
+    <div class="grid grid-4 destination-grid">
+      {% for item in destinations %}
+        <a class="destination-card card-link" href="{{ url_for('search.results', **{'from': 'NBO', 'to': item.code, 'depart': item.date, 'trip': 'one_way', 'adults': 1}) }}">
+          <img src="{{ url_for('static', filename='images/destinations/' ~ item.code|lower ~ '.svg') }}" alt="" loading="lazy" width="480" height="320">
+          <div class="destination-body">
+            <div>
+              <h3>{{ item.city }}</h3>
+              <span class="muted small">{{ item.country }}</span>
+            </div>
+            <div class="right">
+              <span class="xs muted">{{ t('home.from_price') }}</span>
+              <div class="destination-price">{{ item.price|money }}</div>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="deals-band" aria-labelledby="deals-title">
+    <div class="container section">
+      <div class="section-head">
+        <div>
+          <h2 id="deals-title">{{ t('home.deals') }}</h2>
+          <p>{{ t('home.deals_sub') }}</p>
+        </div>
+      </div>
+      <div class="grid grid-3">
+        {% for deal in deals %}
+          <a class="deal-card card-link" href="{{ url_for('search.results', **{'from': 'NBO', 'to': deal.code, 'depart': deal.date, 'trip': 'one_way', 'adults': 1}) }}">
+            <div class="deal-route"><span class="mono">NBO</span><span class="deal-arc" aria-hidden="true"></span><span class="mono">{{ deal.code }}</span></div>
+            <div class="row-between">
+              <div>
+                <div class="strong">{{ deal.city }}</div>
+                <div class="small deal-date">{{ deal.date|date('%a %d %b') }}</div>
+              </div>
+              <div class="deal-price">{{ deal.price|money }}</div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="section container" aria-labelledby="map-title">
+    <div class="map-layout">
+      <div>
+        <h2 id="map-title">{{ t('home.network') }}</h2>
+        <p class="muted">{{ t('home.network_sub') }}</p>
+        <div class="map-readout card" data-map-readout aria-live="polite">
+          <span class="muted small" data-map-hint>{{ t('home.map_hint') }}</span>
+          <strong data-map-route></strong>
+          <span class="destination-price" data-map-price></span>
+        </div>
+      </div>
+      <figure class="route-map" data-route-map data-from-label="{{ t('home.from_price') }}">
+        <svg viewBox="0 0 {{ network.width }} {{ network.height }}" role="img" aria-label="{{ t('home.network') }}">
+          <path class="map-land" d="M0 0 H720 V128 C700 150 684 174 668 192 C652 208 648 216 640 230 C626 248 612 262 600 280 C590 298 584 310 574 324 C566 340 556 358 546 378 C538 396 534 410 536 424 C538 444 548 462 556 482 C560 504 566 532 576 560 H0Z"/>
+          <ellipse class="map-land" cx="553" cy="438" rx="6" ry="15"/>
+          <path class="map-lake" d="M185 100 C230 85 300 90 320 115 C335 160 320 230 270 262 C225 275 175 250 170 200 C165 165 165 120 185 100Z"/>
+          <path class="map-border" d="M325 0 L300 60 L310 100 M283 160 L468 267 L550 358 M170 160 L103 160 L125 190 L120 250 L60 262 M103 160 L60 150 M643 0 V192"/>
+          <text class="map-label" x="612" y="400">Indian Ocean</text>
+          <text class="map-label" x="210" y="190">L. Victoria</text>
+          {% for route in network.routes %}
+            <a class="map-route-link" href="{{ url_for('search.results', **{'from': route.origin, 'to': route.destination, 'depart': today().isoformat(), 'trip': 'one_way', 'adults': 1}) }}" data-route="{{ route.origin_city }} &rarr; {{ route.destination_city }}" data-price="{{ route.price|money }}">
+              <title>{{ route.origin_city }} to {{ route.destination_city }}: {{ t('home.from_price') }} {{ route.price|money }}</title>
+              <path class="map-route-hit" d="{{ route.path }}"/>
+              <path class="map-route" d="{{ route.path }}"/>
+            </a>
+          {% endfor %}
+          {% for point in network.points %}
+            <g class="map-airport{% if point.is_hub %} is-hub{% endif %}">
+              <circle cx="{{ point.x }}" cy="{{ point.y }}" r="{{ 8 if point.is_hub else 5 }}"/>
+              <text x="{{ point.x + 12 }}" y="{{ point.y + 4 }}">{{ point.city }}</text>
+            </g>
+          {% endfor %}
+        </svg>
+      </figure>
+    </div>
+  </section>
+
+  <section class="promo-band" aria-labelledby="promo-title">
+    <div class="container promo-inner">
+      <div>
+        <h2 id="promo-title">{{ t('home.promo_title') }}</h2>
+        <p class="mb-0">{{ t('home.promo_body') }}</p>
+      </div>
+      <div class="row">
+        <span class="promo-code mono">KARIBU10</span>
+        <span class="promo-code mono">COAST2026</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section container" aria-labelledby="why-title">
+    <h2 id="why-title" class="center mb-5">{{ t('home.why') }}</h2>
+    <div class="grid grid-3">
+      {% for key in ('flex', 'miles', 'mpesa') %}
+        <div class="card feature-card">
+          <span class="feature-arc" aria-hidden="true"></span>
+          <h3>{{ t('home.why_' ~ key) }}</h3>
+          <p class="muted mb-0">{{ t('home.why_' ~ key ~ '_body') }}</p>
+        </div>
+      {% endfor %}
     </div>
   </section>
 {% endblock %}
