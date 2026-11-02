@@ -1,0 +1,16 @@
+.git
+.github
+.vscode
+.venv
+.env
+.coverage
+.pytest_cache
+.ruff_cache
+__pycache__
+*.py[cod]
+docs
+htmlcov
+instance
+tests
+tools
+launcher.py

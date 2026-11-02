@@ -1,0 +1,17 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      ANGA_ENV: production
+      # Plain http://localhost needs this off. Remove it when serving over HTTPS.
+      ANGA_COOKIE_SECURE: "0"
+      # Generated into the volume on first start if left empty.
+      SECRET_KEY: ${SECRET_KEY:-}
+    volumes:
+      - anga-data:/app/instance
+    restart: unless-stopped
+
+volumes:
+  anga-data:
