@@ -1,0 +1,37 @@
+[project]
+name = "anga-air"
+version = "1.0.0"
+description = "Online booking and operations platform for Anga Air, a fictional East African airline."
+requires-python = ">=3.11"
+authors = [{ name = "Cyril Katua" }]
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["instance"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RET", "PTH", "S"]
+ignore = [
+    "S101",  # assert is how pytest works
+    "S311",  # seed data does not need cryptographic randomness
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S608"]
+"launcher.py" = ["S603", "S607"]
+"anga/repositories/*" = ["S608"]  # dynamic WHERE clauses are built from constants; values stay bound
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = ["error::ResourceWarning"]
+
+[tool.coverage.run]
+source = ["anga"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

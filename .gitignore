@@ -1,0 +1,23 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Local state
+instance/
+*.db
+*.db-shm
+*.db-wal
+.env
+
+# OS / editors
+.DS_Store
+Thumbs.db
