@@ -1,0 +1,8 @@
+{% extends "emails/_layout.html" %}
+{% block body %}
+  <h1 style="margin:0 0 8px;font-size:22px;">You are all set</h1>
+  <p>Your booking reference is <strong style="font-family:Consolas,monospace;font-size:18px;">{{ booking.reference }}</strong>.</p>
+  {% include "emails/_itinerary.html" %}
+  <p><strong>Total paid:</strong> {{ booking.total|ksh }}</p>
+  <p>Online check-in opens 48 hours before departure. Use your reference and this email address to manage your booking.</p>
+{% endblock %}

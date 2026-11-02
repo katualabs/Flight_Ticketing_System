@@ -1,0 +1,6 @@
+{% extends "emails/_layout.html" %}
+{% block body %}
+  <h1 style="margin:0 0 8px;font-size:22px;">Your flight has been cancelled</h1>
+  <p>We are sorry: flight <strong>{{ flight.flight_number }}</strong> from {{ flight.origin_city }} to {{ flight.destination_city }} on {{ flight.departure_date|date }} will not operate.</p>
+  <p>Your booking <strong style="font-family:Consolas,monospace;">{{ booking.reference }}</strong> is marked for rebooking. You can move to another flight free of charge from Manage Booking.</p>
+{% endblock %}

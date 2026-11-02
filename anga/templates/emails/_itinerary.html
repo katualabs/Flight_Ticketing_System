@@ -1,0 +1,10 @@
+<table role="presentation" width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;margin:16px 0;font-size:14px;">
+  {% for segment in segments %}
+    <tr style="border-top:1px solid #d6dcec;">
+      <td><strong>{{ segment.flight.flight_number }}</strong><br>{{ segment.flight.departure_date|date }}</td>
+      <td>{{ segment.flight.origin_city }} ({{ segment.flight.origin }}) {{ segment.flight.departure_time }}<br>{{ segment.flight.destination_city }} ({{ segment.flight.destination }}) {{ segment.flight.arrival_time }}</td>
+      <td>{{ segment.flight.cabin }} {{ segment.flight.fare_family }}</td>
+    </tr>
+  {% endfor %}
+</table>
+<p style="margin:0 0 8px;"><strong>Passengers:</strong> {% for person in passengers %}{{ person.full_name }}{% if not loop.last %}, {% endif %}{% endfor %}</p>

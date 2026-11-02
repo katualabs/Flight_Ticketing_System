@@ -1,0 +1,7 @@
+{% extends "emails/_layout.html" %}
+{% block body %}
+  <h1 style="margin:0 0 8px;font-size:22px;">Your booking is cancelled</h1>
+  <p>Booking <strong style="font-family:Consolas,monospace;">{{ booking.reference }}</strong> has been cancelled.</p>
+  {% include "emails/_itinerary.html" %}
+  <p><strong>Refund:</strong> {{ refund|ksh }}</p>
+{% endblock %}

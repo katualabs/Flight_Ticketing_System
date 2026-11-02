@@ -1,0 +1,8 @@
+{% extends "emails/_layout.html" %}
+{% block body %}
+  <h1 style="margin:0 0 8px;font-size:22px;">Your booking was updated</h1>
+  <p>{{ message }}</p>
+  <p>Booking reference <strong style="font-family:Consolas,monospace;">{{ booking.reference }}</strong>.</p>
+  {% include "emails/_itinerary.html" %}
+  <p><strong>Total:</strong> {{ booking.total|ksh }}</p>
+{% endblock %}
