@@ -1,0 +1,61 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.2.0, pluggy-1.7.0
+rootdir: C:\Users\HomePC\Documents\Flight_Ticketing_System
+configfile: pyproject.toml
+testpaths: tests
+plugins: cov-7.1.0
+collected 498 items
+
+tests\test_accounts.py ...........................................       [  8%]
+tests\test_admin.py .................................................... [ 19%]
+.....................................                                    [ 26%]
+tests\test_api.py ..............                                         [ 29%]
+tests\test_app.py .................                                      [ 32%]
+tests\test_booking.py ...........................................        [ 41%]
+tests\test_checkin.py ...............................                    [ 47%]
+tests\test_db.py .......                                                 [ 48%]
+tests\test_i18n.py ....................                                  [ 53%]
+tests\test_manage.py ..........................................          [ 61%]
+tests\test_payments.py .................................                 [ 68%]
+tests\test_pricing.py ........................................           [ 76%]
+tests\test_search.py .................................                   [ 82%]
+tests\test_security.py ....................................              [ 89%]
+tests\test_seed.py ....................                                  [ 93%]
+tests\test_status.py ..................                                  [ 97%]
+tests\test_wizard.py ............                                        [100%]
+
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                            Stmts   Miss Branch BrPart  Cover   Missing
+---------------------------------------------------------------------------
+anga\__init__.py                   40      2      4      2    91%   28, 30
+anga\access.py                     17      0      8      1    96%   15->exit
+anga\blueprints\account.py        128      1     30      2    98%   32, 40->51
+anga\blueprints\admin.py          343      2     44      0    99%   249-250
+anga\blueprints\booking.py        217     15     66     10    91%   73-74, 203, 206, 207->211, 220, 231-233, 247, 294, 300, 301->307, 304-306, 318
+anga\blueprints\manage.py         139      6     32      1    96%   83, 87-89, 155-156
+anga\cli.py                        23      1      2      1    92%   25
+anga\clock.py                      31      2      2      1    91%   51-52
+anga\db.py                         76      0     14      2    98%   102->105, 126->128
+anga\errors.py                     23      1      6      1    93%   38
+anga\housekeeping.py               33      2     12      5    84%   21, 22->exit, 34->exit, 42, 44->exit
+anga\i18n.py                       15      0      4      1    95%   394->396
+anga\repositories\bookings.py      72      3     10      1    95%   93, 148, 158, 199->202
+anga\repositories\flights.py       61      4      8      2    91%   159-160, 165-166
+anga\security.py                  100      1     22      1    98%   144
+anga\seed.py                      143      6     28      4    93%   182-184, 259, 322, 342->exit, 406
+anga\services\analytics.py         77      1     10      1    98%   39
+anga\services\booking.py          288      5     96     10    96%   49->47, 123, 208->206, 228, 316, 418, 468->467, 470, 479->478, 515->513
+anga\services\loyalty.py           36      0     12      2    96%   41->49, 57->65
+anga\services\manage.py           186      7     68      8    94%   88, 92, 130, 168, 192, 231, 250->252, 308
+anga\services\ops.py              200      1     36      1    99%   180
+anga\services\payment.py           81      3     18      3    94%   55, 57, 149
+anga\services\pricing.py           98      0     32      1    99%   169->171
+anga\templating.py                 44      2      8      2    92%   37, 52
+anga\validators.py                381      9    196      9    97%   94, 96, 113, 115, 117, 364, 375, 413, 423
+---------------------------------------------------------------------------
+TOTAL                            4131     74    982     72    97%
+
+35 files skipped due to complete coverage.
+============================ 498 passed in 49.88s =============================
