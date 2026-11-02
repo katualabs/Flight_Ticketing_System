@@ -7,6 +7,7 @@ from flask import Flask
 
 from anga import db, seed
 from anga.services import booking as booking_service
+from anga.services import watches
 
 
 def register(app: Flask) -> None:
@@ -24,6 +25,11 @@ def register(app: Flask) -> None:
             click.echo("Demo data loaded.")
         else:
             click.echo("Database already seeded. Use --reset to start over.")
+
+    @app.cli.command("check-price-watches")
+    def check_price_watches_command() -> None:
+        """Raise alerts for watched trips that have become cheaper."""
+        click.echo(f"Raised {watches.check()} alert(s).")
 
     @app.cli.command("expire-holds")
     def expire_holds_command() -> None:

@@ -1,0 +1,6 @@
+{% extends "emails/_layout.html" %}
+{% block body %}
+  <h1 style="margin:0 0 8px;font-size:22px;">The price has dropped</h1>
+  <p>{{ watch.origin_city }} to {{ watch.destination_city }} on {{ watch.travel_date|date }} is now <strong>{{ price|ksh }}</strong>, down from {{ watch.seen_price|ksh }} when you started watching it.</p>
+  <p>Fares change with demand, so this may not last.</p>
+{% endblock %}
