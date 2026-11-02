@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 
 from anga import db
-from anga.services import analytics
-from tests.helpers import TODAY
+from anga.services import analytics, ops
+from tests.helpers import TODAY, future_date, get_flight
 
 STAFF = {
     "admin": ("admin@anga.example", "AngaAdmin#2026"),
@@ -118,3 +118,331 @@ def test_bar_rows_scale_to_the_largest():
         {"origin": "NBO", "destination": "KIS", "revenue": 50},
     ]
     assert [row["width"] for row in analytics.bar_rows(rows, "revenue")] == [100, 50]
+
+
+ADMIN_ONLY = [
+    "/admin/flights/new",
+    "/admin/flights/generate",
+]
+
+
+@pytest.mark.parametrize("path", ADMIN_ONLY)
+def test_agents_cannot_reach_flight_editing(agent, path):
+    assert agent.get(path).status_code == 403
+
+
+def test_agent_cannot_change_prices_or_delete(agent, app):
+    with app.app_context():
+        flight = get_flight()
+        fare = ops.fares_for(flight["id"])[0]
+    url = f"/admin/flights/{flight['id']}"
+    assert agent.get(url).status_code == 200
+    assert agent.post(f"{url}/fares/{fare['id']}", data={"price": 1}).status_code == 403
+    assert agent.post(f"{url}/delete").status_code == 403
+    assert agent.post(f"{url}/cancel").status_code == 403
+    assert agent.post(f"{url}/times", data={}).status_code == 403
+    assert b"Price (KSh)" not in agent.get(url).data
+
+
+def test_flight_list_filters_and_paginates(admin):
+    page = admin.get("/admin/flights")
+    assert b"Page 1 of" in page.data
+    filtered = admin.get(f"/admin/flights?q=AN101&date={future_date()}")
+    assert b"AN101" in filtered.data
+    assert b"AN201" not in filtered.data
+    assert b"Page 2" in admin.get("/admin/flights?page=2").data
+
+
+FLIGHT_FORM = {
+    "flight_number": "AN901",
+    "origin": "NBO",
+    "destination": "MBA",
+    "departure_date": future_date(),
+    "departure_time": "22:00",
+    "duration_minutes": "75",
+    "aircraft_code": "E190",
+    "base_fare": "7000",
+}
+
+
+def test_create_flight_with_fares_and_seats(admin, app):
+    assert admin.get("/admin/flights/new").status_code == 200
+    response = admin.post("/admin/flights/new", data=FLIGHT_FORM)
+    assert response.status_code == 302
+    with app.app_context():
+        flight = get_flight("AN901")
+        assert flight["arrival_time"] == "23:15"
+        assert len(ops.fares_for(flight["id"])) == 6
+        assert (
+            db.fetch_value("SELECT COUNT(*) FROM seats WHERE flight_id = ?", (flight["id"],)) > 50
+        )
+    assert "flight.create" in audit_actions(app)
+
+
+def test_new_flight_shows_up_in_public_search(admin):
+    admin.post("/admin/flights/new", data=FLIGHT_FORM)
+    page = admin.get(f"/search/?from=NBO&to=MBA&depart={future_date()}&trip=one_way&adults=1")
+    assert b"AN901" in page.data
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "fragment"),
+    [
+        ("flight_number", "XX1", b"look like AN101"),
+        ("destination", "NBO", b"different destination"),
+        ("departure_date", "2020-01-01", b"from today"),
+        ("departure_time", "99:99", b"HH:MM"),
+        ("duration_minutes", "0", b"duration"),
+        ("base_fare", "0", b"base fare"),
+    ],
+)
+def test_flight_form_validation(admin, field, value, fragment):
+    page = admin.post("/admin/flights/new", data={**FLIGHT_FORM, field: value})
+    assert page.status_code == 400
+    assert fragment in page.data
+
+
+def test_duplicate_flight_is_refused(admin):
+    admin.post("/admin/flights/new", data=FLIGHT_FORM)
+    page = admin.post("/admin/flights/new", data=FLIGHT_FORM)
+    assert page.status_code == 400
+    assert b"already flies" in page.data
+
+
+def test_bad_airport_and_aircraft_are_refused(admin):
+    assert (
+        b"valid airports"
+        in admin.post("/admin/flights/new", data={**FLIGHT_FORM, "origin": "XXX"}).data
+    )
+    assert (
+        b"valid aircraft"
+        in admin.post("/admin/flights/new", data={**FLIGHT_FORM, "aircraft_code": "A380"}).data
+    )
+
+
+def test_update_times_recalculates_arrival(admin, app):
+    with app.app_context():
+        flight = get_flight()
+    url = f"/admin/flights/{flight['id']}/times"
+    admin.post(url, data={"departure_time": "09:00", "duration_minutes": "90"})
+    with app.app_context():
+        assert get_flight()["arrival_time"] == "10:30"
+    page = admin.post(
+        url, data={"departure_time": "x", "duration_minutes": "0"}, follow_redirects=True
+    )
+    assert b"valid departure time" in page.data
+
+
+def test_fare_editor_changes_price_and_guards_sold_seats(admin, app):
+    with app.app_context():
+        flight = get_flight()
+        fare = ops.fares_for(flight["id"])[0]
+    url = f"/admin/flights/{flight['id']}/fares/{fare['id']}"
+    sold = fare["total_seats"] - fare["available_seats"]
+    ok = admin.post(
+        url,
+        data={
+            "price": "5000",
+            "total_seats": fare["total_seats"],
+            "available_seats": fare["available_seats"],
+        },
+        follow_redirects=True,
+    )
+    assert b"updated" in ok.data
+    with app.app_context():
+        assert ops.get_fare(fare["id"])["price"] == 5000
+    if sold:
+        shrunk = admin.post(
+            url,
+            data={"price": "5000", "total_seats": sold - 1, "available_seats": 0},
+            follow_redirects=True,
+        )
+        assert b"already sold" in shrunk.data
+    over = admin.post(
+        url,
+        data={
+            "price": "5000",
+            "total_seats": fare["total_seats"],
+            "available_seats": fare["total_seats"] + 1,
+        },
+        follow_redirects=True,
+    )
+    assert b"cannot exceed" in over.data
+    oversold = admin.post(
+        url,
+        data={"price": "5000", "total_seats": "999", "available_seats": fare["available_seats"]},
+        follow_redirects=True,
+    )
+    assert b"physical seats" in oversold.data
+    bad = admin.post(url, data={"price": "-1"}, follow_redirects=True)
+    assert b"price in shillings" in bad.data
+    assert "fare.update" in audit_actions(app)
+
+
+def test_fare_of_another_flight_is_404(admin, app):
+    with app.app_context():
+        flight = get_flight()
+        other = ops.fares_for(get_flight("AN103")["id"])[0]
+    assert admin.post(f"/admin/flights/{flight['id']}/fares/{other['id']}").status_code == 404
+
+
+def test_delete_only_without_bookings(admin, app):
+    from anga.services import booking as booking_service
+
+    with app.app_context():
+        booked = booking_service.get_by_reference("ANDEMO01")
+        flight_id = booking_service.bookings_repo.segments(booked["id"])[0]["flight_id"]
+        empty = get_flight("AN301", 15)["id"]
+    refused = admin.post(f"/admin/flights/{flight_id}/delete", follow_redirects=True)
+    assert b"Cancel it instead" in refused.data
+    with app.app_context():
+        assert ops.get_flight(flight_id) is not None
+    assert admin.post(f"/admin/flights/{empty}/delete").status_code == 302
+    with app.app_context():
+        assert ops.get_flight(empty) is None
+    assert "flight.delete" in audit_actions(app)
+
+
+def test_cancel_flight_notifies_and_marks_for_rebooking(admin, app):
+    from anga.repositories import outbox
+    from anga.services import booking as booking_service
+
+    with app.app_context():
+        booked = booking_service.get_by_reference("ANDEMO01")
+        flight_id = booking_service.bookings_repo.segments(booked["id"])[0]["flight_id"]
+    page = admin.post(f"/admin/flights/{flight_id}/cancel", follow_redirects=True)
+    assert b"marked for rebooking" in page.data
+    with app.app_context():
+        assert booking_service.get_by_reference("ANDEMO01")["needs_rebooking"] == 1
+        assert "cancelled" in outbox.for_recipient("wanjiru@anga.example")[0]["subject"]
+
+
+def test_cancelled_flight_can_be_rebooked_free_then_clears_the_flag(admin, app):
+    from anga.services import booking as booking_service
+    from anga.services import manage
+
+    with app.app_context():
+        booked = booking_service.get_by_reference("ANDEMO01")
+        segment = booking_service.bookings_repo.segments(booked["id"])[0]
+    admin.post(f"/admin/flights/{segment['flight_id']}/cancel")
+    with app.app_context():
+        booked = booking_service.get_by_reference("ANDEMO01")
+        target = get_flight("AN103", 2)
+        assert manage.change_flight(booked, segment["segment_id"], target["id"]) == 0
+        assert booking_service.get_by_reference("ANDEMO01")["needs_rebooking"] == 0
+
+
+def test_cancelling_a_rebook_booking_refunds_in_full(admin, app):
+    from anga.services import booking as booking_service
+    from anga.services import manage
+
+    with app.app_context():
+        booked = booking_service.get_by_reference("ANDEMO01")
+        segment = booking_service.bookings_repo.segments(booked["id"])[0]
+    admin.post(f"/admin/flights/{segment['flight_id']}/cancel")
+    with app.app_context():
+        booked = booking_service.get_by_reference("ANDEMO01")
+        assert manage.cancellation_quote(booked).refund == booked["total"]
+
+
+def test_departed_flight_cannot_be_cancelled(admin, app):
+    with app.app_context():
+        flight = get_flight()
+        db.execute("UPDATE flights SET status = 'Departed' WHERE id = ?", (flight["id"],))
+    page = admin.post(f"/admin/flights/{flight['id']}/cancel", follow_redirects=True)
+    assert b"cannot be cancelled" in page.data
+
+
+def test_bulk_schedule_generation(admin, app):
+    assert b"Generate flights" in admin.get("/admin/flights/generate").data
+    page = admin.post(
+        "/admin/flights/generate",
+        data={
+            "flight_number": "AN321",
+            "start": "2026-04-06",
+            "end": "2026-04-19",
+            "weekdays": ["1", "3"],
+        },
+        follow_redirects=True,
+    )
+    assert b"4 flight(s) created, 0 already existed" in page.data
+    with app.app_context():
+        dates = [
+            row[0]
+            for row in db.fetch_all(
+                "SELECT departure_date FROM flights WHERE flight_number = 'AN321'"
+                " AND departure_date >= '2026-04-06' ORDER BY departure_date"
+            )
+        ]
+    assert dates == ["2026-04-06", "2026-04-08", "2026-04-13", "2026-04-15"]
+    again = admin.post(
+        "/admin/flights/generate",
+        data={
+            "flight_number": "AN321",
+            "start": "2026-04-06",
+            "end": "2026-04-19",
+            "weekdays": ["1"],
+        },
+        follow_redirects=True,
+    )
+    assert b"0 flight(s) created, 2 already existed" in again.data
+    assert "flight.bulk_generate" in audit_actions(app)
+
+
+@pytest.mark.parametrize(
+    ("data", "fragment"),
+    [
+        (
+            {"flight_number": "", "start": "2026-04-06", "end": "2026-04-07", "weekdays": ["1"]},
+            b"Choose a route",
+        ),
+        (
+            {
+                "flight_number": "AN999",
+                "start": "2026-04-06",
+                "end": "2026-04-07",
+                "weekdays": ["1"],
+            },
+            b"from the schedule",
+        ),
+        (
+            {
+                "flight_number": "AN101",
+                "start": "2020-01-01",
+                "end": "2026-04-07",
+                "weekdays": ["1"],
+            },
+            b"from today",
+        ),
+        (
+            {
+                "flight_number": "AN101",
+                "start": "2026-04-06",
+                "end": "2026-04-01",
+                "weekdays": ["1"],
+            },
+            b"before the start",
+        ),
+        (
+            {
+                "flight_number": "AN101",
+                "start": "2026-04-06",
+                "end": "2027-04-06",
+                "weekdays": ["1"],
+            },
+            b"at most",
+        ),
+        (
+            {"flight_number": "AN101", "start": "2026-04-06", "end": "2026-04-07"},
+            b"at least one weekday",
+        ),
+    ],
+)
+def test_bulk_schedule_validation(admin, data, fragment):
+    page = admin.post("/admin/flights/generate", data=data)
+    assert page.status_code == 400
+    assert fragment in page.data
+
+
+def test_unknown_flight_is_404(admin):
+    assert admin.get("/admin/flights/999999").status_code == 404

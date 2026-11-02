@@ -1,0 +1,38 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf, field %}
+{% block title %}Generate schedule{% endblock %}
+{% block admin %}
+  <div class="admin-title"><h1>Generate schedule</h1></div>
+  <form class="card" method="post" novalidate>
+    {{ csrf() }}
+    <p class="small muted">Creates a route's flights between two dates on the weekdays you choose. Dates that already have the flight are skipped.</p>
+    <div class="form-grid">
+      <div class="field{% if errors.get('flight_number') %} has-error{% endif %}">
+        <label for="f-flight_number">Route</label>
+        <select class="select" id="f-flight_number" name="flight_number">
+          <option value="">Choose a route</option>
+          {% for route in routes %}
+            <option value="{{ route.flight_number }}"{% if values.get('flight_number') == route.flight_number %} selected{% endif %}>{{ route.flight_number }} · {{ route.origin }} &rarr; {{ route.destination }} · {{ route.departure_time }}</option>
+          {% endfor %}
+        </select>
+        {% if errors.get('flight_number') %}<span class="field-error">{{ errors['flight_number'] }}</span>{% endif %}
+      </div>
+      {{ field('start', 'From', values.get('start', ''), 'date', errors=errors, required=true) }}
+      {{ field('end', 'To', values.get('end', ''), 'date', errors=errors, required=true) }}
+    </div>
+    <fieldset class="mt-4">
+      <legend class="strong small mb-3">Weekdays</legend>
+      <div class="weekday-picker">
+        {% set chosen = values.getlist('weekdays') if values else [] %}
+        {% for number, name in [('1', 'Mon'), ('2', 'Tue'), ('3', 'Wed'), ('4', 'Thu'), ('5', 'Fri'), ('6', 'Sat'), ('7', 'Sun')] %}
+          <label class="check"><input type="checkbox" name="weekdays" value="{{ number }}"{% if number in chosen %} checked{% endif %}>{{ name }}</label>
+        {% endfor %}
+      </div>
+      {% if errors.get('weekdays') %}<span class="field-error">{{ errors['weekdays'] }}</span>{% endif %}
+    </fieldset>
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="{{ url_for('admin.flights') }}">Cancel</a>
+      <button class="btn btn-primary" type="submit">Generate flights</button>
+    </div>
+  </form>
+{% endblock %}

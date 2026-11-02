@@ -1,0 +1,23 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf, field, select %}
+{% block title %}New flight{% endblock %}
+{% block admin %}
+  <div class="admin-title"><h1>New flight</h1></div>
+  <form class="card" method="post" novalidate>
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ field('flight_number', 'Flight number', values.get('flight_number', ''), errors=errors, required=true, attrs={'placeholder': 'AN901', 'maxlength': 6}) }}
+      {{ select('origin', 'From', airport_options, values.get('origin'), errors) }}
+      {{ select('destination', 'To', airport_options, values.get('destination'), errors) }}
+      {{ field('departure_date', 'Date', values.get('departure_date', ''), 'date', errors=errors, required=true) }}
+      {{ field('departure_time', 'Departure time', values.get('departure_time', ''), 'time', errors=errors, required=true) }}
+      {{ field('duration_minutes', 'Duration (minutes)', values.get('duration_minutes', ''), 'number', errors=errors, required=true, attrs={'min': 1}) }}
+      {{ select('aircraft_code', 'Aircraft', aircraft_options, values.get('aircraft_code'), errors) }}
+      {{ field('base_fare', 'Base fare (KSh)', values.get('base_fare', ''), 'number', errors=errors, required=true, attrs={'min': 1}) }}
+    </div>
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="{{ url_for('admin.flights') }}">Cancel</a>
+      <button class="btn btn-primary" type="submit">Create flight</button>
+    </div>
+  </form>
+{% endblock %}

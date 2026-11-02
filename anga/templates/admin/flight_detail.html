@@ -1,0 +1,77 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf, status_pill %}
+{% block title %}{{ flight.flight_number }}{% endblock %}
+{% block admin %}
+  <div class="admin-title">
+    <div>
+      <h1 class="mono">{{ flight.flight_number }}</h1>
+      <span class="muted">{{ flight.origin_city }} &rarr; {{ flight.destination_city }} · {{ flight.departure_date|date }} · {{ flight.aircraft_name }}</span>
+    </div>
+    <div class="row">
+      {{ status_pill(flight.status) }}
+      {% if 'admin.manifest' in admin_endpoints %}<a class="btn btn-secondary btn-sm" href="{{ url_for('admin.manifest', flight_id=flight.id) }}">Manifest</a>{% endif %}
+    </div>
+  </div>
+
+  {% if 'admin.update_status' in admin_endpoints %}
+    <section class="card mb-4" aria-labelledby="status-title">
+      <h2 class="card-title" id="status-title">Flight status</h2>
+      <form class="filter-bar mb-0" method="post" action="{{ url_for('admin.update_status', flight_id=flight.id) }}">
+        {{ csrf() }}
+        <div class="field"><label for="st-status">Status</label>
+          <select class="select" id="st-status" name="status">{% for status in statuses %}<option value="{{ status }}"{% if status == flight.status %} selected{% endif %}>{{ status }}</option>{% endfor %}</select>
+        </div>
+        <div class="field"><label for="st-delay">Delay (minutes)</label><input class="input" id="st-delay" type="number" name="delay_minutes" min="0" max="1440" value="{{ flight.delay_minutes }}"></div>
+        <div class="field"><label for="st-gate">Gate</label><input class="input mono" id="st-gate" name="gate" maxlength="3" value="{{ flight.gate or '' }}" placeholder="B4"></div>
+        <button class="btn btn-primary" type="submit">Update</button>
+      </form>
+    </section>
+  {% endif %}
+
+  <section class="card mb-4" aria-labelledby="fares-title">
+    <h2 class="card-title" id="fares-title">Prices and inventory</h2>
+    <p class="small muted">Base prices. Weekend and demand pricing are added when customers search.</p>
+    {% for fare in fares %}
+      {% if is_admin %}
+        <form class="fare-editor" method="post" action="{{ url_for('admin.update_fare', flight_id=flight.id, fare_id=fare.id) }}">
+          {{ csrf() }}
+          <strong class="small">{{ fare.cabin }}<br>{{ fare.fare_family }}</strong>
+          <div class="field"><label for="p-{{ fare.id }}">Price (KSh)</label><input class="input" id="p-{{ fare.id }}" type="number" name="price" min="1" value="{{ fare.price }}"></div>
+          <div class="field"><label for="t-{{ fare.id }}">Total seats</label><input class="input" id="t-{{ fare.id }}" type="number" name="total_seats" min="0" value="{{ fare.total_seats }}"></div>
+          <div class="field"><label for="a-{{ fare.id }}">Available</label><input class="input" id="a-{{ fare.id }}" type="number" name="available_seats" min="0" value="{{ fare.available_seats }}"></div>
+          <button class="btn btn-secondary btn-sm" type="submit">Save</button>
+        </form>
+      {% else %}
+        <div class="row-between review-row small">
+          <strong>{{ fare.cabin }} {{ fare.fare_family }}</strong>
+          <span>{{ fare.price|ksh }} · {{ fare.available_seats }}/{{ fare.total_seats }} available</span>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </section>
+
+  {% if is_admin %}
+    <section class="card mb-4" aria-labelledby="times-title">
+      <h2 class="card-title" id="times-title">Schedule</h2>
+      <form class="filter-bar mb-0" method="post" action="{{ url_for('admin.update_flight_times', flight_id=flight.id) }}">
+        {{ csrf() }}
+        <div class="field"><label for="tm-dep">Departure</label><input class="input" id="tm-dep" type="time" name="departure_time" value="{{ flight.departure_time }}"></div>
+        <div class="field"><label for="tm-dur">Duration (minutes)</label><input class="input" id="tm-dur" type="number" name="duration_minutes" min="1" value="{{ flight.duration_minutes }}"></div>
+        <button class="btn btn-secondary" type="submit">Save times</button>
+      </form>
+    </section>
+
+    <section class="card" aria-labelledby="danger-title">
+      <h2 class="card-title" id="danger-title">Remove this flight</h2>
+      <p class="small muted">A flight with bookings cannot be deleted. Cancelling it tells every passenger and marks their bookings for free rebooking.</p>
+      <div class="row">
+        <form method="post" action="{{ url_for('admin.cancel_flight', flight_id=flight.id) }}" data-confirm="Cancel {{ flight.flight_number }} and notify its passengers?" data-confirm-accept="Cancel flight">
+          {{ csrf() }}<button class="btn btn-danger btn-sm" type="submit">Cancel flight</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.delete_flight', flight_id=flight.id) }}" data-confirm="Delete {{ flight.flight_number }} permanently?" data-confirm-accept="Delete flight">
+          {{ csrf() }}<button class="btn btn-secondary btn-sm" type="submit">Delete flight</button>
+        </form>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}
