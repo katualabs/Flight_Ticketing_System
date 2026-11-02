@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from flask import has_request_context, session
 
+from anga.i18n_sw import SWAHILI
+
 DEFAULT_LANGUAGE = "en"
 LANGUAGES = {"en": "English", "sw": "Kiswahili"}
 
@@ -23,7 +25,6 @@ STRINGS: dict[str, dict[str, str]] = {
         "nav.menu": "Menu",
         "footer.company": "Anga Air",
         "footer.help": "Help",
-        "footer.legal": "Legal",
         "footer.contact": "Get in touch",
         "footer.terms": "Terms",
         "footer.privacy": "Privacy",
@@ -32,9 +33,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "capitals of East Africa.",
         "common.search": "Search",
         "common.back": "Back",
-        "common.continue": "Continue",
         "common.save": "Save",
-        "common.cancel": "Cancel",
         "common.dismiss": "Dismiss",
         "error.not_found_title": "This page has flown off course",
         "error.not_found_body": "We could not find the page you were looking for.",
@@ -373,6 +372,9 @@ STRINGS: dict[str, dict[str, str]] = {
         "account.remove_confirm": "Remove {name}?",
         "account.your_details": "Your details",
         "account.change_password": "Change password",
+        "prefs.language": "Language",
+        "prefs.switch_language": "Badilisha kwa Kiswahili",
+        "prefs.switch_currency": "Show prices in",
         "calendar.title": "Fare calendar",
         "calendar.subtitle": "The cheapest fare for every day of the month, at a glance.",
         "calendar.empty_title": "No fares for this month",
@@ -381,7 +383,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "calendar.cheaper": "Cheaper",
         "calendar.pricier": "Pricier",
     },
-    "sw": {},
+    "sw": SWAHILI,
 }
 
 

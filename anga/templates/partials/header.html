@@ -18,6 +18,19 @@
       {% endfor %}
     </nav>
     <div class="header-tools">
+      <form class="tool-form" method="post" action="{{ url_for('public.set_language') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+        <input type="hidden" name="lang" value="{{ 'en' if current_lang == 'sw' else 'sw' }}">
+        <button class="tool-button" type="submit" aria-label="{{ t('prefs.switch_language') }}" title="{{ t('prefs.switch_language') }}">{{ 'EN' if current_lang == 'sw' else 'SW' }}</button>
+      </form>
+      <form class="tool-form" method="post" action="{{ url_for('public.set_currency') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ request.full_path.rstrip('?') }}">
+        {% set other_currency = 'KES' if current_currency == 'USD' else 'USD' %}
+        <input type="hidden" name="currency" value="{{ other_currency }}">
+        <button class="tool-button" type="submit" aria-label="{{ t('prefs.switch_currency') }} {{ other_currency }}" title="{{ t('prefs.switch_currency') }} {{ other_currency }}">{{ 'KSh' if other_currency == 'KES' else 'US$' }}</button>
+      </form>
       <button class="tool-button" type="button" data-theme-toggle aria-label="Toggle dark theme" hidden></button>
       {% if g.user %}
         <a class="tool-button" href="{{ url_for('account.dashboard') }}">{{ g.user.full_name.split()[0] }}</a>

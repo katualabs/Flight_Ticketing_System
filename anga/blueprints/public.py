@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
 
 from anga import clock, validators
+from anga.i18n import LANGUAGES
+from anga.security import safe_redirect_target
 from anga.services import contact as contact_service
 from anga.services import search as search_service
 from anga.services import status as status_service
@@ -111,3 +113,24 @@ def board(airport: str) -> str:
         day=day,
         rows=status_service.board(place["code"], kind, day),
     )
+
+
+def _back() -> str:
+    return safe_redirect_target(request.form.get("next"), url_for("public.home"))
+
+
+@bp.post("/preferences/language")
+def set_language():
+    language = request.form.get("lang")
+    if language in LANGUAGES:
+        session["lang"] = language
+    return redirect(_back())
+
+
+@bp.post("/preferences/currency")
+def set_currency():
+    """Display only: bookings are always charged in shillings."""
+    currency = request.form.get("currency")
+    if currency in ("KES", "USD"):
+        session["currency"] = currency
+    return redirect(_back())
