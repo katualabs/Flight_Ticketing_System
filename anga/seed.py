@@ -342,7 +342,7 @@ def seed_demo_bookings(users: dict[str, int]) -> None:
     for index in range(40):
         if created >= DEMO_BOOKING_COUNT:
             break
-        days_ago = index % max(history - 2, 1)
+        days_ago = (index * 3) % max(history - 2, 1)
         created_at = datetime.combine(
             today - timedelta(days=days_ago), time(rng.randint(7, 20), rng.randint(0, 59))
         )
@@ -355,7 +355,7 @@ def seed_demo_bookings(users: dict[str, int]) -> None:
                     (
                         rng.choice(routes),
                         created_at.date() + timedelta(days=rng.randint(2, 7)),
-                        rng.choice(("Economy", "Economy", "Economy", "Business")),
+                        rng.choice(("Economy", "Economy", "Economy", "Business", "First")),
                         rng.choice(families),
                     )
                 ],
