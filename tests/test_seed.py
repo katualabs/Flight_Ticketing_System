@@ -160,6 +160,11 @@ def test_customer_has_miles_and_tier(seeded):
     assert balance == ledger_total
 
 
+def test_sample_messages_and_emails_exist(seeded):
+    assert db.fetch_value("SELECT COUNT(*) FROM contact_messages") >= 3
+    assert db.fetch_value("SELECT COUNT(*) FROM outbox WHERE recipient = 'hello@anga.example'") >= 3
+
+
 def test_capacity_demo_flight_is_nearly_full(seeded):
     flight = flights_repo.get_by_number("AN201", (clock.today() + timedelta(days=3)).isoformat())
     available = db.fetch_value(

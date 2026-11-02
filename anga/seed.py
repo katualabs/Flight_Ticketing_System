@@ -18,7 +18,7 @@ from anga.repositories import flights as flights_repo
 from anga.repositories import promos as promos_repo
 from anga.repositories import settings as settings_repo
 from anga.repositories import users as users_repo
-from anga.services import accounts, booking, payment, schedule
+from anga.services import accounts, booking, contact, payment, schedule
 
 _EAT_KEN = "Africa/Nairobi"
 _EAT_TZA = "Africa/Dar_es_Salaam"
@@ -378,6 +378,19 @@ def seed_capacity_demo() -> None:
         schedule.fill_cabin(flight["id"], "Economy", leave_free=2)
 
 
+def seed_messages() -> None:
+    samples = [
+        ("Achieng Odhiambo", "achieng@demo.example", "Infant on a Lamu flight",
+         "Hello, can an infant travel on the Dash 8 to Lamu? Thank you."),
+        ("Mutua Nzioka", "mutua@demo.example", "Corporate rates",
+         "Do you offer rates for a team of twelve flying to Kigali each quarter?"),
+        ("Salim Bakari", "salim@demo.example", "Lost my reference",
+         "I booked last week but cannot find my reference. Can you resend it?"),
+    ]  # fmt: skip
+    for full_name, email, subject, body in samples:
+        contact.submit({"full_name": full_name, "email": email, "subject": subject, "body": body})
+
+
 def seed_schedule() -> int:
     today = clock.today()
     schedule.generate_history(today, current_app.config["SCHEDULE_HISTORY_DAYS"], HISTORY_ROUTES)
@@ -398,6 +411,7 @@ def run(reset_first: bool = False) -> bool:
     seed_promos()
     seed_demo_bookings(seed_users())
     seed_capacity_demo()
+    seed_messages()
     settings_repo.put("seeded_at", clock.timestamp())
     get_db().execute("PRAGMA optimize")
     return True
