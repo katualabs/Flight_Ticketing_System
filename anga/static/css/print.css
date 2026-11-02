@@ -40,6 +40,16 @@
     padding: 0 0 8pt;
   }
 
+  .ticket-hero {
+    background: none;
+    color: #000;
+    padding: 0 0 8pt;
+  }
+
+  .ticket-hero p { color: #333; }
+  .ticket-reference { color: #000; }
+  .ticket-stub { background: none; }
+
   .page-header p { color: #333; }
   .page-header::after { display: none; }
 
