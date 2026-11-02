@@ -1,0 +1,70 @@
+/* Print styles: e-tickets, boarding passes and manifests come out clean. */
+
+@media print {
+  :root {
+    --bg: #fff;
+    --surface: #fff;
+    --text: #000;
+    --text-muted: #333;
+    --border: #999;
+    color-scheme: light;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  .site-header,
+  .site-footer,
+  .demo-notice-screen,
+  .skip-link,
+  .no-print,
+  .toast-region,
+  dialog {
+    display: none !important;
+  }
+
+  .card,
+  .ticket,
+  .boarding-pass {
+    box-shadow: none !important;
+    border: 1px solid #999;
+    break-inside: avoid;
+  }
+
+  .page-header {
+    background: none;
+    color: #000;
+    padding: 0 0 8pt;
+  }
+
+  .page-header p { color: #333; }
+  .page-header::after { display: none; }
+
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  .table th,
+  .table td {
+    padding: 3pt 5pt;
+    border-bottom: 1px solid #bbb;
+  }
+
+  .table-wrap {
+    overflow: visible;
+    border: 0;
+  }
+
+  .section,
+  .section-tight {
+    padding-block: 8pt;
+  }
+
+  main {
+    width: 100%;
+  }
+}

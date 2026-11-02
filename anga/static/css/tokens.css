@@ -1,0 +1,142 @@
+/* Design tokens: the single source of colour, space, type and elevation. */
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("../fonts/plus-jakarta-sans-latin-variable.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/jetbrains-mono-latin-variable.woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --night: #0d1b3e;
+  --twilight: #27407f;
+  --twilight-bright: #3d5fb8;
+  --amber: #ffb347;
+  --coral: #ff6f61;
+  --acacia: #2f7d5b;
+  --sunset: linear-gradient(120deg, var(--amber), var(--coral));
+  --on-sunset: #1c1033;
+
+  /* Surfaces */
+  --bg: #f5f6fb;
+  --bg-tint: #eaeef8;
+  --surface: #ffffff;
+  --surface-2: #f0f3fa;
+  --surface-inverse: #0d1b3e;
+  --border: #d6dcec;
+  --border-strong: #8b96b4;
+
+  /* Text. Every pairing here meets WCAG AA on --bg and --surface. */
+  --text: #0f1b3a;
+  --text-muted: #4d5877;
+  --text-inverse: #f5f7ff;
+  --link: #27407f;
+
+  /* Feedback */
+  --success: #1f7a54;
+  --success-bg: #dff4ea;
+  --warning: #8a5a00;
+  --warning-bg: #fff1d6;
+  --danger: #b3261e;
+  --danger-bg: #fde7e4;
+  --info: #27407f;
+  --info-bg: #e3eafb;
+
+  /* Fare calendar heat scale, cheap to pricey */
+  --heat-0: #cdeedd;
+  --heat-1: #e3f2c8;
+  --heat-2: #fff0bd;
+  --heat-3: #ffdca6;
+  --heat-4: #ffc3a3;
+  --heat-5: #ffa79c;
+  --heat-ink: #1a2238;
+
+  /* Space (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4.5rem;
+  --space-9: 6.5rem;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgb(13 27 62 / 8%), 0 1px 3px rgb(13 27 62 / 6%);
+  --shadow: 0 8px 24px -8px rgb(13 27 62 / 16%), 0 2px 6px rgb(13 27 62 / 6%);
+  --shadow-lg: 0 28px 60px -20px rgb(13 27 62 / 35%), 0 8px 18px -8px rgb(13 27 62 / 16%);
+
+  /* Type scale */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  --text-3xl: clamp(1.9rem, 1.4rem + 2vw, 2.75rem);
+  --text-hero: clamp(2.4rem, 1.5rem + 3.8vw, 4.5rem);
+
+  --container: 1200px;
+  --header-height: 68px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --twilight-bright: #8aa6f0;
+  --on-sunset: #1c1033;
+
+  --bg: #0a1228;
+  --bg-tint: #101a36;
+  --surface: #131e3d;
+  --surface-2: #1b2850;
+  --surface-inverse: #060c1e;
+  --border: #2b3964;
+  --border-strong: #6e7da8;
+
+  --text: #eef1fb;
+  --text-muted: #aab4d2;
+  --text-inverse: #f5f7ff;
+  --link: #a9bdf5;
+
+  --success: #6fd4a6;
+  --success-bg: #123a2c;
+  --warning: #ffcf7f;
+  --warning-bg: #3b2c10;
+  --danger: #ff9d94;
+  --danger-bg: #431c1a;
+  --info: #a9bdf5;
+  --info-bg: #1b2a58;
+
+  --heat-0: #17513d;
+  --heat-1: #33552f;
+  --heat-2: #5a5426;
+  --heat-3: #6e4a22;
+  --heat-4: #7c3f2c;
+  --heat-5: #8a3633;
+  --heat-ink: #fdf6ee;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow: 0 8px 24px -8px rgb(0 0 0 / 60%);
+  --shadow-lg: 0 28px 60px -20px rgb(0 0 0 / 75%);
+}
