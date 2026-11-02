@@ -32,10 +32,11 @@ def create_app(config_name: str | None = None, overrides: dict | None = None) ->
         app.config["SECRET_KEY"] = load_or_create_secret_key(instance_path)
 
     db.init_app(app)
+    # Housekeeping first: its first-run migration must precede anything using the database.
+    housekeeping.init_app(app)
     security.init_app(app)
     templating.init_app(app)
     errors.init_app(app)
-    housekeeping.init_app(app)
     _register_blueprints(app)
     cli.register(app)
     return app

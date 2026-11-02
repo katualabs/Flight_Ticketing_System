@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "booking/_pay_forms.html" import pay_forms %}
+{% from "macros.html" import page_header %}
+{% block title %}{{ t('ticket.pay_now') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('pay.existing_title', reference=booking.reference), t('pay.hold_until', when=booking.expires_at|datetime)) }}
+  <section class="section-tight container-narrow">
+    <p class="strong">{{ t('book.total') }}: {{ booking.total|ksh }}</p>
+    {{ pay_forms(booking.total, errors, active, allow_later=false, values=request.form) }}
+  </section>
+{% endblock %}

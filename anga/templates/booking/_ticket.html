@@ -1,0 +1,40 @@
+{# A boarding-pass-style e-ticket for one passenger on one segment. #}
+{% macro ticket(booking, segment, entry) %}
+  {% set flight = segment.flight %}
+  {% set record = entry.record %}
+  <article class="ticket" aria-label="{{ t('ticket.flight') }} {{ flight.flight_number }}: {{ record.full_name }}">
+    <div class="ticket-main">
+      <div class="ticket-brand">
+        <span>Anga Air</span>
+        <span class="badge {{ booking.status|status_badge }}">{{ booking.status }}</span>
+      </div>
+      <div class="ticket-route">
+        <div class="ticket-airport">
+          <span class="ticket-code">{{ flight.origin }}</span>
+          <span class="ticket-city">{{ flight.origin_city }} · {{ flight.departure_time }}</span>
+        </div>
+        <div class="ticket-arc" aria-hidden="true">{{ flight.duration_minutes|duration }}</div>
+        <div class="ticket-airport right">
+          <span class="ticket-code">{{ flight.destination }}</span>
+          <span class="ticket-city">{{ flight.destination_city }} · {{ flight.arrival_time }}</span>
+        </div>
+      </div>
+      <div class="ticket-facts">
+        <div class="ticket-fact"><span>{{ t('ticket.passenger') }}</span><strong>{{ record.full_name }}</strong></div>
+        <div class="ticket-fact"><span>{{ t('ticket.id') }}</span><strong class="mono">{{ record.id_number|mask_id }}</strong></div>
+        <div class="ticket-fact"><span>{{ t('ticket.flight') }}</span><strong class="mono">{{ flight.flight_number }}</strong></div>
+        <div class="ticket-fact"><span>{{ t('ticket.date') }}</span><strong>{{ flight.departure_date|date('%d %b %Y') }}</strong></div>
+        <div class="ticket-fact"><span>{{ t('ticket.seat') }}</span><strong class="mono">{{ record.seat_code or t('ticket.lap') }}</strong></div>
+        <div class="ticket-fact"><span>{{ t('ticket.fare') }}</span><strong>{{ t('cabin.' ~ flight.cabin) }} {{ flight.fare_family }}</strong></div>
+        <div class="ticket-fact"><span>{{ t('ticket.extras') }}</span><strong>
+          {% for extra in entry.extras %}{{ extra.name }}{% if extra.quantity > 1 %} ×{{ extra.quantity }}{% endif %}{% if not loop.last %}, {% endif %}{% else %}{{ t('ticket.none') }}{% endfor %}
+        </strong></div>
+      </div>
+    </div>
+    <div class="ticket-stub">
+      <span class="xs muted">{{ t('ticket.reference') }}</span>
+      <strong class="mono">{{ booking.reference }}</strong>
+      {% if entry.qr %}<img src="{{ entry.qr }}" alt="{{ t('ticket.qr_alt', reference=booking.reference) }}" width="148" height="148">{% endif %}
+    </div>
+  </article>
+{% endmacro %}

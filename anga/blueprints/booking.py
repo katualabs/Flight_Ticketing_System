@@ -10,6 +10,7 @@ from flask import (
     abort,
     flash,
     g,
+    jsonify,
     redirect,
     render_template,
     request,
@@ -17,10 +18,13 @@ from flask import (
     url_for,
 )
 
-from anga import validators
+from anga import access, clock, validators
 from anga.security import safe_redirect_target
 from anga.services import booking as booking_service
-from anga.services.booking import BookingError
+from anga.services import payment as payment_service
+from anga.services import tickets
+from anga.services.booking import BookingError, PriceChangedError
+from anga.services.payment import PaymentError
 
 bp = Blueprint("booking", __name__, url_prefix="/book")
 
@@ -205,3 +209,143 @@ def quote():
             request.form, g.draft, booking_service.extras_catalogue()
         )
     return render_template("booking/_summary.html", quote=booking_service.quote_draft(preview))
+
+
+@bp.route("/pay", methods=["GET", "POST"])
+@draft_required
+def pay():
+    """Choosing how to pay is what actually creates the booking."""
+    guard = _require_passengers()
+    if guard:
+        return guard
+    errors: dict[str, str] = {}
+    if request.method == "POST":
+        method = request.form.get("method")
+        details, errors = _validate_method(method)
+        if not errors:
+            try:
+                return _create_and_charge(method, details)
+            except PriceChangedError as error:
+                flash(str(error), "warning")
+                return redirect(url_for("booking.review"))
+            except (BookingError, PaymentError) as error:
+                flash(str(error), "error")
+                return redirect(url_for("booking.seats"))
+    return _render(
+        "booking/pay.html", "pay", errors=errors, active=request.form.get("method", "mpesa")
+    ), (400 if errors else 200)
+
+
+def _validate_method(method: str | None) -> tuple[dict, dict[str, str]]:
+    if method == "mpesa":
+        phone, problem = validators.validate_mpesa_phone(request.form.get("mpesa_phone", ""))
+        return {"phone": phone}, ({"mpesa_phone": problem} if problem else {})
+    if method == "card_sim":
+        return validators.validate_demo_card(request.form, clock.today())
+    if method == "pay_later":
+        return {}, {}
+    return {}, {"method": "Choose a payment method."}
+
+
+def _create_and_charge(method: str, details: dict):
+    flights = booking_service.draft_flights(g.draft)
+    expires_at = (
+        payment_service.pay_later_expiry(flights)
+        if method == "pay_later"
+        else payment_service.checkout_expiry()
+    )
+    expected = validators.parse_int(request.form.get("expected_total"))
+    created = booking_service.create_booking(
+        g.draft,
+        user_id=g.user["id"] if g.get("user") else None,
+        expires_at=expires_at,
+        expected_total=expected,
+    )
+    access.grant(created["reference"])
+    booking_service.delete_draft(session.pop(DRAFT_SESSION_KEY))
+    return _charge(created, method, details)
+
+
+def _charge(booking, method: str, details: dict):
+    if method == "mpesa":
+        payment = payment_service.initiate_mpesa(booking, details["phone"])
+        return redirect(url_for("booking.mpesa_wait", payment_ref=payment["reference"]))
+    if method == "card_sim":
+        payment_service.pay_by_card(booking, details["last4"])
+        flash("Payment received. Your trip is confirmed.", "success")
+    else:
+        payment_service.record_pay_later(booking)
+        flash("Your seats are held for 24 hours.", "info")
+    return redirect(url_for("booking.confirmation", reference=booking["reference"]))
+
+
+def _viewable_booking(reference: str):
+    booking = booking_service.get_by_reference(reference)
+    if booking is None or not access.can_view(booking):
+        abort(404)
+    return booking
+
+
+@bp.route("/pay/<reference>", methods=["GET", "POST"])
+def pay_existing(reference: str):
+    """Pay for, or retry paying for, a booking that is already held."""
+    booking = _viewable_booking(reference)
+    if booking["status"] != "Pending":
+        return redirect(url_for("booking.confirmation", reference=reference))
+    errors: dict[str, str] = {}
+    if request.method == "POST":
+        method = request.form.get("method")
+        details, errors = _validate_method(method)
+        if method == "pay_later":
+            errors = {"method": "This booking is already on hold."}
+        if not errors:
+            try:
+                return _charge(booking, method, details)
+            except PaymentError as error:
+                flash(str(error), "error")
+                return redirect(url_for("booking.confirmation", reference=reference))
+    return render_template(
+        "booking/pay_existing.html",
+        booking=booking,
+        errors=errors,
+        active=request.form.get("method", "mpesa"),
+    ), (400 if errors else 200)
+
+
+def _viewable_payment(payment_ref: str):
+    payment = payment_service.get_payment(payment_ref)
+    if payment is None:
+        abort(404)
+    booking = booking_service.get_booking(payment["booking_id"])
+    if not access.can_view(booking):
+        abort(404)
+    return payment, booking
+
+
+@bp.get("/mpesa/<payment_ref>")
+def mpesa_wait(payment_ref: str):
+    """The "check your phone" screen. It also works without JS by refreshing itself."""
+    payment, booking = _viewable_payment(payment_ref)
+    payment = payment_service.poll_mpesa(payment)
+    if payment["status"] == "succeeded":
+        flash("M-Pesa payment received. Your trip is confirmed.", "success")
+        return redirect(url_for("booking.confirmation", reference=booking["reference"]))
+    return render_template("booking/mpesa.html", payment=payment, booking=booking)
+
+
+@bp.get("/payment-status/<payment_ref>")
+def payment_status(payment_ref: str):
+    payment, booking = _viewable_payment(payment_ref)
+    payment = payment_service.poll_mpesa(payment)
+    return jsonify(
+        {
+            "status": payment["status"],
+            "redirect": url_for("booking.mpesa_wait", payment_ref=payment_ref),
+        }
+    )
+
+
+@bp.get("/confirmation/<reference>")
+def confirmation(reference: str):
+    booking = _viewable_booking(reference)
+    return render_template("booking/confirmation.html", **tickets.booking_detail(booking))

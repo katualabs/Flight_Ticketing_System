@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ t('mpesa.title') }}{% endblock %}
+{% block head %}
+  {% if payment.status == 'initiated' %}<noscript><meta http-equiv="refresh" content="4"></noscript>{% endif %}
+{% endblock %}
+{% block content %}
+  <section class="section container">
+    {% if payment.status == 'failed' %}
+      <div class="card mpesa-wait">
+        <h1>{{ t('mpesa.failed_title') }}</h1>
+        <p class="muted">{{ t('mpesa.failed_body') }}</p>
+        <a class="btn btn-primary btn-lg" href="{{ url_for('booking.pay_existing', reference=booking.reference) }}">{{ t('mpesa.retry') }}</a>
+      </div>
+    {% else %}
+      <div class="card mpesa-wait" data-payment-poll="{{ url_for('booking.payment_status', payment_ref=payment.reference) }}">
+        <div class="mpesa-phone" aria-hidden="true"><div class="mpesa-screen">M-PESA</div></div>
+        <h1>{{ t('mpesa.title') }}</h1>
+        <p>{{ t('mpesa.sent', phone=payment.phone, amount=payment.amount|ksh) }}</p>
+        <p class="small muted">{{ t('mpesa.simulated') }}</p>
+        <p class="strong" role="status" aria-live="polite">{{ t('mpesa.waiting') }}&hellip;</p>
+        <noscript><a class="btn btn-secondary" href="{{ url_for('booking.mpesa_wait', payment_ref=payment.reference) }}">{{ t('mpesa.check') }}</a></noscript>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

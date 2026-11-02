@@ -28,6 +28,10 @@ def insert(
     return cursor.lastrowid
 
 
+def get_by_id(payment_id: int) -> Row | None:
+    return fetch_one("SELECT * FROM payments WHERE id = ?", (payment_id,))
+
+
 def get_by_reference(reference: str) -> Row | None:
     return fetch_one("SELECT * FROM payments WHERE reference = ?", (reference,))
 

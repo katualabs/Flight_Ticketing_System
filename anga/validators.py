@@ -253,3 +253,36 @@ def parse_extras(form: Mapping, draft: dict, catalogue: list) -> dict[str, dict[
         if chosen:
             extras[str(index)] = chosen
     return extras
+
+
+def validate_mpesa_phone(value: str) -> tuple[str, str | None]:
+    """Safaricom-style numbers: 07XX, 01XX, or the same with a 254 prefix."""
+    phone = normalise_phone(clean(value))
+    if re.fullmatch(r"(\+?254|0)[17][0-9]{8}", phone):
+        return phone, None
+    return phone, "Enter a Kenyan mobile number, for example 0712 345 678."
+
+
+TEST_CARD_NUMBER = "4242424242424242"
+
+
+def validate_demo_card(form: Mapping, today: date) -> Result:
+    """Accept only the published test number, so no real card can ever be charged.
+
+    Only the last four digits leave this function: the full number and CVC are
+    never returned, logged or stored.
+    """
+    errors: dict[str, str] = {}
+    number = re.sub(r"[\s-]", "", clean(form.get("card_number")))
+    if number != TEST_CARD_NUMBER:
+        errors["card_number"] = "This demo only accepts the test card 4242 4242 4242 4242."
+    match = re.fullmatch(r"(0[1-9]|1[0-2])\s*/\s*([0-9]{2})", clean(form.get("card_expiry")))
+    if not match:
+        errors["card_expiry"] = "Enter the expiry as MM/YY."
+    elif (2000 + int(match[2]), int(match[1])) < (today.year, today.month):
+        errors["card_expiry"] = "That card has expired."
+    if not re.fullmatch(r"[0-9]{3}", clean(form.get("card_cvc"))):
+        errors["card_cvc"] = "Enter the 3-digit security code."
+    if len(clean(form.get("card_name"))) < 2:
+        errors["card_name"] = "Enter the name on the card."
+    return {"last4": number[-4:] if not errors else None}, errors

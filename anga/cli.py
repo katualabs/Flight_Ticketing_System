@@ -6,6 +6,7 @@ import click
 from flask import Flask
 
 from anga import db, seed
+from anga.services import booking as booking_service
 
 
 def register(app: Flask) -> None:
@@ -23,3 +24,8 @@ def register(app: Flask) -> None:
             click.echo("Demo data loaded.")
         else:
             click.echo("Database already seeded. Use --reset to start over.")
+
+    @app.cli.command("expire-holds")
+    def expire_holds_command() -> None:
+        """Cancel unpaid bookings past their deadline."""
+        click.echo(f"Expired {booking_service.expire_holds()} booking(s).")

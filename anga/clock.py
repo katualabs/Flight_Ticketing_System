@@ -9,6 +9,8 @@ airports outside EAT are converted using the offsets below.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, date, datetime, timedelta
 
 NETWORK_OFFSET_MINUTES = 180
@@ -29,6 +31,18 @@ def freeze(moment: datetime | None) -> None:
     """Pin the clock to ``moment``; pass None to resume real time."""
     global _frozen
     _frozen = moment
+
+
+@contextmanager
+def travel(moment: datetime) -> Iterator[None]:
+    """Run a block at another time, restoring the clock afterwards."""
+    global _frozen
+    previous = _frozen
+    _frozen = moment
+    try:
+        yield
+    finally:
+        _frozen = previous
 
 
 def now() -> datetime:

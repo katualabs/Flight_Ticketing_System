@@ -1,0 +1,9 @@
+{% extends "booking/_layout.html" %}
+{% from "booking/_pay_forms.html" import pay_forms %}
+{% block wizard %}
+  <h1>{{ t('pay.title') }}</h1>
+  {{ pay_forms(quote.total, errors, active, values=request.form) }}
+  <div class="form-actions">
+    <a class="btn btn-secondary" href="{{ url_for('booking.review') }}">{{ t('common.back') }}</a>
+  </div>
+{% endblock %}

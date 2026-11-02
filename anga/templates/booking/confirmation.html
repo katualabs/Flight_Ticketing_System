@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "booking/_ticket.html" import ticket %}
+{% block title %}{{ booking.reference }}{% endblock %}
+{% block content %}
+  <header class="ticket-hero">
+    <div class="container">
+      {% if booking.status == 'Confirmed' %}
+        <h1>{{ t('ticket.confirmed') }}</h1>
+        <p>{{ t('ticket.confirmed_sub', reference=booking.reference) }}</p>
+      {% elif booking.status == 'Pending' %}
+        <h1>{{ t('ticket.pending') }}</h1>
+        <p>{{ t('ticket.pending_sub', reference=booking.reference, when=booking.expires_at|datetime) }}</p>
+      {% else %}
+        <h1>{{ t('ticket.cancelled') }}</h1>
+        <p>{{ t('ticket.cancelled_sub', reference=booking.reference) }}</p>
+      {% endif %}
+    </div>
+  </header>
+  <section class="section-tight container">
+    <div class="row no-print mb-5">
+      {% if booking.status == 'Pending' %}
+        <a class="btn btn-primary" href="{{ url_for('booking.pay_existing', reference=booking.reference) }}">{{ t('ticket.pay_now') }} · {{ booking.total|ksh }}</a>
+      {% endif %}
+      <button class="btn btn-secondary" type="button" data-print hidden>{{ t('ticket.print') }}</button>
+    </div>
+    {% for segment in segments %}
+      {% for entry in segment.tickets %}
+        {{ ticket(booking, segment, entry) }}
+      {% endfor %}
+    {% endfor %}
+    <div class="card">
+      <div class="row-between">
+        <strong>{{ t('book.total') }}</strong>
+        <strong>{{ booking.total|ksh }}</strong>
+      </div>
+    </div>
+  </section>
+{% endblock %}

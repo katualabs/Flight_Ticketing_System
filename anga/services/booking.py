@@ -161,6 +161,14 @@ class Quote:
         return self.subtotal + self.seats_total + self.extras_total - self.discount
 
 
+def get_booking(booking_id: int) -> Row | None:
+    return bookings_repo.get(booking_id)
+
+
+def get_by_reference(reference: str) -> Row | None:
+    return bookings_repo.get_by_reference(reference)
+
+
 def non_infant_indexes(draft: dict) -> list[int]:
     return [i for i, kind in enumerate(draft["passenger_types"]) if kind != "infant"]
 
@@ -355,6 +363,7 @@ def create_booking(
     user_id: int | None = None,
     expires_at: datetime | None = None,
     expected_total: int | None = None,
+    reference: str | None = None,
 ) -> Row:
     """Turn a draft into a Pending booking, taking seats and inventory atomically.
 
@@ -374,7 +383,7 @@ def create_booking(
             )
         promo_id = _claim_promo(draft, quote)
         booking_id = bookings_repo.insert(
-            generate_reference(),
+            reference or generate_reference(),
             user_id,
             draft["contact"]["email"],
             draft["contact"]["phone"],

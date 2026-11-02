@@ -97,5 +97,7 @@ def init_app(app: Flask) -> None:
     def inject_globals() -> dict:
         return {
             "current_lang": i18n.current_language(),
-            "current_currency": session.get("currency", "KES"),
+            "current_currency": (
+                session.get("currency", "KES") if has_request_context() else "KES"
+            ),
         }

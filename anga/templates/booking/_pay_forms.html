@@ -1,0 +1,48 @@
+{# Payment method forms, shared by the wizard and by paying for a held booking. #}
+{% from "macros.html" import csrf, field %}
+{% macro pay_forms(total, errors, active, allow_later=true, values={}) %}
+  <div class="alert alert-warning pay-note">{{ t('pay.simulated') }}</div>
+  <div class="tabs" role="tablist" data-payment-tabs hidden>
+    <button type="button" role="tab" data-tab="mpesa" aria-selected="{{ 'true' if active == 'mpesa' else 'false' }}">{{ t('pay.mpesa') }}</button>
+    <button type="button" role="tab" data-tab="card_sim" aria-selected="{{ 'true' if active == 'card_sim' else 'false' }}">{{ t('pay.card') }}</button>
+    {% if allow_later %}<button type="button" role="tab" data-tab="pay_later" aria-selected="{{ 'true' if active == 'pay_later' else 'false' }}">{{ t('pay.later') }}</button>{% endif %}
+  </div>
+  <div class="pay-tabs">
+    <form method="post" class="card pay-panel" data-panel="mpesa">
+      {{ csrf() }}
+      <input type="hidden" name="method" value="mpesa">
+      <input type="hidden" name="expected_total" value="{{ total }}">
+      <h2 class="card-title">{{ t('pay.mpesa') }}</h2>
+      <p class="muted small">{{ t('pay.mpesa_body') }}</p>
+      {{ field('mpesa_phone', t('pay.mpesa_phone'), values.get('mpesa_phone', ''), 'tel', errors=errors, required=true, autocomplete='tel', attrs={'placeholder': '0712 345 678'}) }}
+      <div class="form-actions"><button class="btn btn-primary btn-lg" type="submit">{{ t('pay.mpesa_submit') }}</button></div>
+    </form>
+
+    <form method="post" class="card pay-panel" data-panel="card_sim" autocomplete="off">
+      {{ csrf() }}
+      <input type="hidden" name="method" value="card_sim">
+      <input type="hidden" name="expected_total" value="{{ total }}">
+      <h2 class="card-title">{{ t('pay.card') }} <span class="badge badge-warning">TEST ONLY</span></h2>
+      <p class="muted small">{{ t('pay.card_body') }}</p>
+      <div class="form-grid">
+        {{ field('card_number', t('pay.card_number'), '', errors=errors, required=true, autocomplete='off', hint='Use 4242 4242 4242 4242', attrs={'inputmode': 'numeric', 'maxlength': 19, 'data-card-number': 'true', 'placeholder': '4242 4242 4242 4242'}) }}
+        {{ field('card_name', t('pay.card_name'), values.get('card_name', ''), errors=errors, required=true, autocomplete='off') }}
+        {{ field('card_expiry', t('pay.card_expiry'), '', errors=errors, required=true, autocomplete='off', attrs={'maxlength': 5, 'placeholder': '12/30'}) }}
+        {{ field('card_cvc', t('pay.card_cvc'), '', errors=errors, required=true, autocomplete='off', attrs={'inputmode': 'numeric', 'maxlength': 3, 'placeholder': '123'}) }}
+      </div>
+      <div class="form-actions"><button class="btn btn-primary btn-lg" type="submit">{{ t('pay.card_submit', amount=total|ksh) }}</button></div>
+    </form>
+
+    {% if allow_later %}
+      <form method="post" class="card pay-panel" data-panel="pay_later">
+        {{ csrf() }}
+        <input type="hidden" name="method" value="pay_later">
+        <input type="hidden" name="expected_total" value="{{ total }}">
+        <h2 class="card-title">{{ t('pay.later') }}</h2>
+        <p class="muted small">{{ t('pay.later_body') }}</p>
+        <div class="form-actions"><button class="btn btn-secondary btn-lg" type="submit">{{ t('pay.later_submit') }}</button></div>
+      </form>
+    {% endif %}
+  </div>
+  {% if errors.get('method') %}<p class="field-error mt-3">{{ errors['method'] }}</p>{% endif %}
+{% endmacro %}
