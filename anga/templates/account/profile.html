@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, field, page_header %}
+{% block title %}{{ t('account.profile') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('account.profile'), g.user.email) }}
+  <section class="section-tight container">
+    {% include "account/_nav.html" %}
+    <div class="grid grid-2">
+      <form class="card" method="post" action="{{ url_for('account.profile') }}" novalidate>
+        {{ csrf() }}
+        <h2 class="card-title">{{ t('account.your_details') }}</h2>
+        <div class="stack">
+          {{ field('full_name', t('book.full_name'), g.user.full_name, errors=errors, required=true, autocomplete='name') }}
+          {{ field('phone', t('book.phone'), g.user.phone or '', 'tel', errors=errors, autocomplete='tel') }}
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">{{ t('common.save') }}</button></div>
+      </form>
+      <form class="card" method="post" action="{{ url_for('account.change_password') }}" novalidate>
+        {{ csrf() }}
+        <h2 class="card-title">{{ t('account.change_password') }}</h2>
+        <div class="stack">
+          {{ field('current_password', t('account.current_password'), '', 'password', errors=password_errors, required=true, autocomplete='current-password') }}
+          {{ field('password', t('account.new_password'), '', 'password', errors=password_errors, required=true, autocomplete='new-password', hint=t('account.password_rule')) }}
+          {{ field('confirm_password', t('account.confirm_password'), '', 'password', errors=password_errors, required=true, autocomplete='new-password') }}
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">{{ t('account.change_password') }}</button></div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

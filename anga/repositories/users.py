@@ -90,3 +90,49 @@ def delete_traveller(user_id: int, traveller_id: int) -> bool:
         "DELETE FROM saved_travellers WHERE id = ? AND user_id = ?", (traveller_id, user_id)
     )
     return cursor.rowcount == 1
+
+
+def login_attempt(email: str) -> Row | None:
+    return fetch_one("SELECT * FROM login_attempts WHERE email = ?", (email,))
+
+
+def increment_login_failures(email: str) -> int:
+    execute(
+        "INSERT INTO login_attempts (email, failures) VALUES (?, 1)"
+        " ON CONFLICT (email) DO UPDATE SET failures = failures + 1",
+        (email,),
+    )
+    return fetch_value("SELECT failures FROM login_attempts WHERE email = ?", (email,))
+
+
+def lock_login(email: str, until: str) -> None:
+    """Start a lockout and reset the count, so the next window starts afresh."""
+    execute(
+        "UPDATE login_attempts SET locked_until = ?, failures = 0 WHERE email = ?", (until, email)
+    )
+
+
+def clear_login_attempts(email: str) -> None:
+    execute("DELETE FROM login_attempts WHERE email = ?", (email,))
+
+
+def list_all(query: str | None, limit: int, offset: int) -> tuple[list[Row], int]:
+    where, params = "", []
+    if query:
+        where = "WHERE u.email LIKE ? OR u.full_name LIKE ?"
+        params = [f"%{query}%", f"%{query}%"]
+    total = fetch_value(f"SELECT COUNT(*) FROM users u {where}", params)
+    rows = fetch_all(
+        f"SELECT u.*, (SELECT COUNT(*) FROM bookings b WHERE b.user_id = u.id) AS booking_count"
+        f" FROM users u {where} ORDER BY u.created_at DESC, u.id DESC LIMIT ? OFFSET ?",
+        [*params, limit, offset],
+    )
+    return rows, total
+
+
+def update_role(user_id: int, role: str) -> None:
+    execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
+
+
+def set_disabled(user_id: int, disabled: bool) -> None:
+    execute("UPDATE users SET disabled = ? WHERE id = ?", (int(disabled), user_id))

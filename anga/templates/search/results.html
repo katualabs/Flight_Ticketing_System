@@ -58,6 +58,18 @@
           </div>
           <p class="small mt-4 mb-0"><a href="{{ url_for('search.calendar', **{'from': query['from'], 'to': query['to'], 'cabin': query['cabin'], 'month': query['depart'].strftime('%Y-%m')}) }}">{{ t('search.see_calendar') }} &rarr;</a></p>
         </form>
+        {% if g.user and outbound %}
+          <form class="card mt-4" method="post" action="{{ url_for('account.add_watch') }}">
+            {{ csrf() }}
+            <input type="hidden" name="from" value="{{ query['from'] }}">
+            <input type="hidden" name="to" value="{{ query['to'] }}">
+            <input type="hidden" name="date" value="{{ query['depart'].isoformat() }}">
+            <input type="hidden" name="cabin" value="{{ query['cabin'] }}">
+            <input type="hidden" name="back" value="{{ request.full_path }}">
+            <p class="small muted">{{ t('search.watch_body') }}</p>
+            <button class="btn btn-secondary btn-block" type="submit">{{ t('search.watch') }}</button>
+          </form>
+        {% endif %}
       </aside>
 
       <form class="results-list" method="post" action="{{ url_for('booking.start') }}" data-fare-options>

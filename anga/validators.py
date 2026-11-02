@@ -310,3 +310,80 @@ def validate_contact(form: Mapping) -> Result:
 def validate_flight_number(value: str) -> str | None:
     number = clean(value).upper().replace(" ", "")
     return number if FLIGHT_NUMBER_RE.match(number) else None
+
+
+PASSWORD_MIN_LENGTH = 10
+
+
+def password_problem(password: str) -> str | None:
+    """Length matters most, but demo accounts should still model good practice."""
+    if len(password) < PASSWORD_MIN_LENGTH:
+        return f"Use at least {PASSWORD_MIN_LENGTH} characters."
+    if len(password) > 128:
+        return "Use at most 128 characters."
+    checks = (
+        any(c.islower() for c in password),
+        any(c.isupper() for c in password),
+        any(c.isdigit() for c in password),
+        any(not c.isalnum() for c in password),
+    )
+    if not all(checks):
+        return "Include upper and lower case letters, a number and a symbol."
+    return None
+
+
+def validate_registration(form: Mapping) -> Result:
+    full_name = " ".join(clean(form.get("full_name")).split())
+    email = clean(form.get("email")).lower()
+    phone = normalise_phone(clean(form.get("phone")))
+    password = str(form.get("password") or "")
+    errors: dict[str, str] = {}
+    if not is_person_name(full_name):
+        errors["full_name"] = "Enter your first and last name."
+    if not is_email(email):
+        errors["email"] = "Enter a valid email address."
+    if phone and not is_phone(phone):
+        errors["phone"] = "Enter a valid phone number, for example +254712345678."
+    problem = password_problem(password)
+    if problem:
+        errors["password"] = problem
+    elif password != form.get("confirm_password"):
+        errors["confirm_password"] = "The passwords do not match."
+    data = {"full_name": full_name, "email": email, "phone": phone or None, "password": password}
+    return data, errors
+
+
+def validate_profile(form: Mapping) -> Result:
+    full_name = " ".join(clean(form.get("full_name")).split())
+    phone = normalise_phone(clean(form.get("phone")))
+    errors: dict[str, str] = {}
+    if not is_person_name(full_name):
+        errors["full_name"] = "Enter your first and last name."
+    if phone and not is_phone(phone):
+        errors["phone"] = "Enter a valid phone number, for example +254712345678."
+    return {"full_name": full_name, "phone": phone or None}, errors
+
+
+def validate_password_change(form: Mapping) -> Result:
+    new = str(form.get("password") or "")
+    errors: dict[str, str] = {}
+    problem = password_problem(new)
+    if problem:
+        errors["password"] = problem
+    elif new != form.get("confirm_password"):
+        errors["confirm_password"] = "The passwords do not match."
+    return {"current": str(form.get("current_password") or ""), "new": new}, errors
+
+
+def validate_traveller(form: Mapping) -> Result:
+    full_name = " ".join(clean(form.get("full_name")).split())
+    id_number = clean(form.get("id_number"))
+    birth = clean(form.get("date_of_birth"))
+    errors: dict[str, str] = {}
+    if not is_person_name(full_name):
+        errors["full_name"] = "Enter the full name as shown on the ID document."
+    if not ID_RE.match(id_number):
+        errors["id_number"] = "Enter a valid ID or passport number (5-20 characters)."
+    if birth and parse_date(birth) is None:
+        errors["date_of_birth"] = "Enter a valid date."
+    return {"full_name": full_name, "id_number": id_number, "date_of_birth": birth or None}, errors

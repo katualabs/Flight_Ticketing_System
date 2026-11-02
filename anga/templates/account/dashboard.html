@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, empty_state, page_header, status_pill %}
+{% block title %}{{ t('account.title') }}{% endblock %}
+{% macro trip_row(trip) %}
+  <a class="trip-row card card-link" href="{{ url_for('manage.itinerary', reference=trip.booking.reference) }}">
+    <div>
+      <div class="strong">{{ trip.first.origin_city }} &rarr; {{ trip.first.destination_city }}{% if trip.booking.trip_type == 'round_trip' %} {{ t('account.and_back') }}{% endif %}</div>
+      <div class="small muted">{{ trip.first.departure_date|date }} · {{ trip.first.flight_number }}</div>
+    </div>
+    <div class="row">
+      <span class="mono small">{{ trip.booking.reference }}</span>
+      {{ status_pill(trip.booking.status) }}
+    </div>
+  </a>
+{% endmacro %}
+{% block content %}
+  {{ page_header(t('account.greeting', name=g.user.full_name.split()[0]), g.user.email) }}
+  <section class="section-tight container">
+    {% include "account/_nav.html" %}
+
+    {% for watch in watches if watch.alerted_at %}
+      <div class="alert alert-success mb-4 row-between" role="status">
+        <span>{{ t('account.price_drop', origin=watch.origin_city, destination=watch.destination_city, date=watch.travel_date|date, price=watch.alert_price|ksh, seen=watch.seen_price|ksh) }}</span>
+        <span class="row">
+          <a class="btn btn-sm btn-primary" href="{{ url_for('search.results', **{'from': watch.origin, 'to': watch.destination, 'depart': watch.travel_date, 'trip': 'one_way', 'cabin': watch.cabin, 'adults': 1}) }}">{{ t('account.book_now') }}</a>
+          <form method="post" action="{{ url_for('account.dismiss_watch', watch_id=watch.id) }}">{{ csrf() }}<button class="btn btn-sm btn-secondary" type="submit">{{ t('common.dismiss') }}</button></form>
+        </span>
+      </div>
+    {% endfor %}
+
+    <div class="dashboard-grid">
+      <div>
+        <h2>{{ t('account.upcoming') }}</h2>
+        {% for trip in upcoming %}
+          {{ trip_row(trip) }}
+        {% else %}
+          {{ empty_state(t('account.no_trips'), t('account.no_trips_body'), 'trips', url_for('public.home'), t('nav.book')) }}
+        {% endfor %}
+
+        {% if past %}
+          <h2 class="mt-6">{{ t('account.past') }}</h2>
+          {% for trip in past %}{{ trip_row(trip) }}{% endfor %}
+        {% endif %}
+      </div>
+      <aside class="stack">
+        <a class="miles-card card card-link" href="{{ url_for('account.miles') }}">
+          <div class="row-between">
+            <span class="xs muted">{{ t('account.miles_name') }}</span>
+            <span class="badge {{ tier.css_class }}">{{ tier.name }}</span>
+          </div>
+          <div class="miles-balance">{{ '{:,}'.format(g.user.miles_balance) }}</div>
+          {% if tier.next_name %}<div class="small muted">{{ t('account.miles_to_next', miles='{:,}'.format(tier.miles_to_next), tier=tier.next_name) }}</div>{% endif %}
+        </a>
+        <section class="card">
+          <h2 class="card-title">{{ t('account.watches') }}</h2>
+          {% for watch in watches if not watch.alerted_at %}
+            <div class="row-between review-row small">
+              <span>{{ watch.origin }} &rarr; {{ watch.destination }} · {{ watch.travel_date|date('%d %b') }}<br><span class="muted">{{ t('account.seen_at', price=watch.seen_price|ksh) }}</span></span>
+              <form method="post" action="{{ url_for('account.dismiss_watch', watch_id=watch.id) }}">{{ csrf() }}<button class="btn btn-sm btn-secondary" type="submit">{{ t('account.stop') }}</button></form>
+            </div>
+          {% else %}
+            <p class="small muted mb-0">{{ t('account.no_watches') }}</p>
+          {% endfor %}
+        </section>
+      </aside>
+    </div>
+  </section>
+{% endblock %}

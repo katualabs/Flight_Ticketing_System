@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "macros.html" import page_header, empty_state %}
+{% block title %}{{ t('account.miles_name') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('account.miles_name'), t('account.miles_sub')) }}
+  <section class="section-tight container">
+    {% include "account/_nav.html" %}
+    <div class="card mb-5 miles-card">
+      <div class="row-between">
+        <div>
+          <span class="xs muted">{{ t('account.balance') }}</span>
+          <div class="miles-balance">{{ '{:,}'.format(g.user.miles_balance) }}</div>
+        </div>
+        <span class="badge {{ tier.css_class }}">{{ tier.name }}</span>
+      </div>
+      {% if tier.next_name %}
+        <p class="small muted mt-3 mb-0">{{ t('account.miles_to_next', miles='{:,}'.format(tier.miles_to_next), tier=tier.next_name) }}</p>
+      {% else %}
+        <p class="small muted mt-3 mb-0">{{ t('account.top_tier') }}</p>
+      {% endif %}
+    </div>
+    {% if ledger %}
+      <div class="table-wrap">
+        <table class="table table-cards">
+          <thead><tr><th>{{ t('ticket.date') }}</th><th>{{ t('account.activity') }}</th><th class="num">{{ t('account.miles') }}</th></tr></thead>
+          <tbody>
+            {% for row in ledger %}
+              <tr>
+                <td data-label="{{ t('ticket.date') }}">{{ row.created_at|date('%d %b %Y') }}</td>
+                <td data-label="{{ t('account.activity') }}">{{ row.reason }}</td>
+                <td data-label="{{ t('account.miles') }}" class="num strong">{{ '{:+,}'.format(row.delta) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      {{ empty_state(t('account.no_miles'), t('account.no_miles_body'), 'flight', url_for('public.home'), t('nav.book')) }}
+    {% endif %}
+  </section>
+{% endblock %}

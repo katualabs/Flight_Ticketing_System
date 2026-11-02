@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "macros.html" import csrf, field, page_header %}
+{% block title %}{{ t('account.travellers') }}{% endblock %}
+{% block content %}
+  {{ page_header(t('account.travellers'), t('account.travellers_sub')) }}
+  <section class="section-tight container">
+    {% include "account/_nav.html" %}
+    <div class="grid grid-2">
+      <section class="card">
+        <h2 class="card-title">{{ t('account.saved') }}</h2>
+        {% for traveller in travellers %}
+          <div class="row-between review-row">
+            <span>{{ traveller.full_name }} <span class="mono small muted">{{ traveller.id_number|mask_id }}</span></span>
+            <form method="post" action="{{ url_for('account.delete_traveller', traveller_id=traveller.id) }}" data-confirm="{{ t('account.remove_confirm', name=traveller.full_name) }}" data-confirm-accept="{{ t('account.remove') }}" data-confirm-cancel="{{ t('common.back') }}">
+              {{ csrf() }}
+              <button class="btn btn-sm btn-secondary" type="submit">{{ t('account.remove') }}</button>
+            </form>
+          </div>
+        {% else %}
+          <p class="muted small mb-0">{{ t('account.none_saved') }}</p>
+        {% endfor %}
+      </section>
+      <form class="card" method="post" novalidate>
+        {{ csrf() }}
+        <h2 class="card-title">{{ t('account.add_traveller') }}</h2>
+        <div class="stack">
+          {{ field('full_name', t('book.full_name'), values.get('full_name', ''), errors=errors, required=true, autocomplete='off') }}
+          {{ field('id_number', t('book.id_number'), values.get('id_number', ''), errors=errors, required=true, autocomplete='off') }}
+          {{ field('date_of_birth', t('book.date_of_birth'), values.get('date_of_birth', ''), 'date', errors=errors, autocomplete='off', attrs={'max': today().isoformat()}) }}
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" type="submit">{{ t('common.save') }}</button></div>
+      </form>
+    </div>
+  </section>
+{% endblock %}

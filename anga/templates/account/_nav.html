@@ -1,0 +1,10 @@
+<nav class="tabs" aria-label="{{ t('account.title') }}">
+  {% for endpoint, label in [
+    ('account.dashboard', t('account.trips')),
+    ('account.travellers', t('account.travellers')),
+    ('account.miles', t('account.miles')),
+    ('account.profile', t('account.profile')),
+  ] %}
+    <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint %} aria-current="page"{% endif %}>{{ label }}</a>
+  {% endfor %}
+</nav>

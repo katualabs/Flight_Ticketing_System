@@ -19,6 +19,15 @@
     </nav>
     <div class="header-tools">
       <button class="tool-button" type="button" data-theme-toggle aria-label="Toggle dark theme" hidden></button>
+      {% if g.user %}
+        <a class="tool-button" href="{{ url_for('account.dashboard') }}">{{ g.user.full_name.split()[0] }}</a>
+        <form class="tool-form" method="post" action="{{ url_for('account.logout') }}">
+          <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+          <button class="tool-button" type="submit">{{ t('account.logout') }}</button>
+        </form>
+      {% else %}
+        <a class="tool-button" href="{{ url_for('account.login') }}">{{ t('account.login') }}</a>
+      {% endif %}
       <button class="tool-button nav-toggle" type="button" data-nav-toggle aria-controls="main-nav" aria-expanded="false">{{ t('nav.menu') }}</button>
     </div>
   </div>

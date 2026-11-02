@@ -20,9 +20,9 @@ from flask import (
 
 from anga import access, clock, validators
 from anga.security import safe_redirect_target
+from anga.services import accounts, tickets
 from anga.services import booking as booking_service
 from anga.services import payment as payment_service
-from anga.services import tickets
 from anga.services.booking import BookingError, PriceChangedError
 from anga.services.payment import PaymentError
 
@@ -111,7 +111,7 @@ def passengers():
         "passengers",
         errors=errors,
         values=values,
-        saved_travellers=[],
+        saved_travellers=accounts.saved_travellers(g.user["id"]) if g.user else [],
     ), (400 if errors else 200)
 
 
