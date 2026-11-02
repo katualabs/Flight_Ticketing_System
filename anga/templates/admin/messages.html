@@ -1,0 +1,26 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import empty_state, pagination %}
+{% block title %}Messages{% endblock %}
+{% block admin %}
+  <div class="admin-title"><h1>Messages</h1></div>
+  {% if rows %}
+    <div class="table-wrap">
+      <table class="table table-cards">
+        <thead><tr><th>From</th><th>Subject</th><th>Received</th><th>State</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td data-label="From">{{ row.full_name }}<br><span class="xs muted">{{ row.email }}</span></td>
+              <td data-label="Subject"><a class="{{ 'strong' if not row.is_read }}" href="{{ url_for('admin.message_detail', message_id=row.id) }}">{{ row.subject }}</a></td>
+              <td data-label="Received" class="small">{{ row.created_at|datetime }}</td>
+              <td data-label="State">{% if row.is_read %}<span class="badge">Read</span>{% else %}<span class="badge badge-info">Unread</span>{% endif %}{% if row.reply_note %} <span class="badge badge-success">Noted</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pagination(page, pages, 'admin.messages') }}
+  {% else %}
+    {{ empty_state('The inbox is empty', 'Messages from the contact form will appear here.', 'inbox') }}
+  {% endif %}
+{% endblock %}

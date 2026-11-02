@@ -1,0 +1,25 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import empty_state, pagination %}
+{% block title %}Outbox{% endblock %}
+{% block admin %}
+  <div class="admin-title"><h1>Outbox</h1><span class="small muted">Simulated: nothing here was really sent.</span></div>
+  {% if rows %}
+    <div class="table-wrap">
+      <table class="table table-cards">
+        <thead><tr><th>To</th><th>Subject</th><th>Written</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td data-label="To" class="small">{{ row.recipient }}</td>
+              <td data-label="Subject"><a href="{{ url_for('admin.outbox_view', email_id=row.id) }}">{{ row.subject }}</a></td>
+              <td data-label="Written" class="small">{{ row.created_at|datetime }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pagination(page, pages, 'admin.outbox') }}
+  {% else %}
+    {{ empty_state('No emails yet', 'Confirmations and alerts will appear here.', 'inbox') }}
+  {% endif %}
+{% endblock %}

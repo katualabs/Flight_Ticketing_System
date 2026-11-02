@@ -724,3 +724,81 @@ def test_disable_and_enable_user(admin, app):
     with app.app_context():
         assert db.fetch_value("SELECT disabled FROM users WHERE id = ?", (target,)) == 0
     assert admin.post("/admin/users/999999/disable", data={}).status_code == 404
+
+
+def test_message_inbox_read_state_and_note(agent, app):
+    from anga.repositories import messages
+
+    with app.app_context():
+        message_id = messages.insert(
+            "Zawadi Mwita", "z@example.com", "Hello", "A long enough body.", "2026-03-01T09:00:00"
+        )
+    assert b"Hello" in agent.get("/admin/messages").data
+    assert b"A long enough body." in agent.get(f"/admin/messages/{message_id}").data
+    with app.app_context():
+        assert messages.get(message_id)["is_read"] == 1
+    agent.post(f"/admin/messages/{message_id}/unread")
+    with app.app_context():
+        assert messages.get(message_id)["is_read"] == 0
+    saved = agent.post(
+        f"/admin/messages/{message_id}/note",
+        data={"reply_note": "Called back."},
+        follow_redirects=True,
+    )
+    assert b"Called back." in saved.data
+    assert (
+        b"up to 2,000"
+        in agent.post(
+            f"/admin/messages/{message_id}/note", data={"reply_note": ""}, follow_redirects=True
+        ).data
+    )
+    assert agent.get("/admin/messages/999999").status_code == 404
+
+
+def test_message_body_is_escaped(agent, app):
+    from anga.repositories import messages
+
+    with app.app_context():
+        message_id = messages.insert(
+            "Mal Lory",
+            "m@example.com",
+            "<b>hi</b>",
+            "<script>alert(1)</script>",
+            "2026-03-01T09:00:00",
+        )
+    page = agent.get(f"/admin/messages/{message_id}")
+    assert b"<script>alert(1)</script>" not in page.data
+    assert b"&lt;script&gt;" in page.data
+
+
+def test_outbox_viewer_shows_real_rendered_email(agent, app):
+    from anga.repositories import outbox
+
+    with app.app_context():
+        email = outbox.for_recipient("wanjiru@anga.example")[0]
+    assert email["subject"].encode() in agent.get("/admin/outbox").data
+    assert b"<iframe" in agent.get(f"/admin/outbox/{email['id']}").data
+    raw = agent.get(f"/admin/outbox/{email['id']}/raw")
+    assert email["subject"].rsplit(" ", 1)[-1].encode() in raw.data
+    policy = raw.headers["Content-Security-Policy"]
+    assert "sandbox" in policy
+    assert "script" not in policy
+    assert raw.headers["X-Frame-Options"] == "SAMEORIGIN"
+    assert agent.get("/admin/outbox/999999").status_code == 404
+
+
+def test_emails_escape_customer_input(agent, client, app):
+    client.post(
+        "/contact",
+        data={
+            "full_name": "Mal Lory",
+            "email": "m@example.com",
+            "subject": "Testing it",
+            "body": "<script>alert(1)</script> long enough",
+        },
+    )
+    from anga.repositories import outbox
+
+    with app.app_context():
+        body = outbox.for_recipient("hello@anga.example")[0]["html_body"]
+    assert "<script>" not in body

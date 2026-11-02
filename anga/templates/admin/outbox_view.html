@@ -1,0 +1,12 @@
+{% extends "admin/_layout.html" %}
+{% block title %}{{ email.subject }}{% endblock %}
+{% block admin %}
+  <div class="admin-title">
+    <div>
+      <h1>{{ email.subject }}</h1>
+      <span class="small muted">To {{ email.recipient }} · {{ email.created_at|datetime }}</span>
+    </div>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.outbox') }}">Back</a>
+  </div>
+  <iframe class="email-frame" src="{{ url_for('admin.outbox_raw', email_id=email.id) }}" title="Email preview" sandbox></iframe>
+{% endblock %}

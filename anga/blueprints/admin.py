@@ -473,3 +473,88 @@ def disable_user(user_id: int):
     except OpsError as error:
         flash(str(error), "error")
     return redirect(url_for("admin.users"))
+
+
+# ------------------------------------------------------------- messages & outbox
+
+
+def _message_or_404(message_id: int):
+    message = ops.get_message(message_id)
+    if message is None:
+        abort(404)
+    return message
+
+
+@bp.get("/messages")
+@staff_required
+def messages():
+    page = _page()
+    rows, total = ops.inbox(page)
+    return render_template("admin/messages.html", rows=rows, page=page, pages=ops.pages_for(total))
+
+
+@bp.get("/messages/<int:message_id>")
+@staff_required
+def message_detail(message_id: int):
+    message = _message_or_404(message_id)
+    if not message["is_read"]:
+        ops.set_message_read(g.user["id"], message, True)
+    return render_template("admin/message_detail.html", message=_message_or_404(message_id))
+
+
+@bp.post("/messages/<int:message_id>/unread")
+@staff_required
+def mark_unread(message_id: int):
+    ops.set_message_read(g.user["id"], _message_or_404(message_id), False)
+    return redirect(url_for("admin.messages"))
+
+
+@bp.post("/messages/<int:message_id>/note")
+@staff_required
+def save_note(message_id: int):
+    message = _message_or_404(message_id)
+    note = validators.clean(request.form.get("reply_note"))
+    if not 1 <= len(note) <= 2000:
+        flash("Write a note of up to 2,000 characters.", "error")
+    else:
+        ops.save_reply_note(g.user["id"], message, note)
+        flash("Reply note saved.", "success")
+    return redirect(url_for("admin.message_detail", message_id=message_id))
+
+
+@bp.get("/outbox")
+@staff_required
+def outbox():
+    page = _page()
+    rows, total = ops.outbox(page)
+    return render_template("admin/outbox.html", rows=rows, page=page, pages=ops.pages_for(total))
+
+
+def _email_or_404(email_id: int):
+    email = ops.get_email(email_id)
+    if email is None:
+        abort(404)
+    return email
+
+
+@bp.get("/outbox/<int:email_id>")
+@staff_required
+def outbox_view(email_id: int):
+    return render_template("admin/outbox_view.html", email=_email_or_404(email_id))
+
+
+@bp.get("/outbox/<int:email_id>/raw")
+@staff_required
+def outbox_raw(email_id: int):
+    """An email exactly as sent, framed in a sandbox.
+
+    Emails need inline styles, which the site's CSP forbids, so this one response
+    gets a policy of its own: no scripts at all, framed only by this site.
+    """
+    response = Response(_email_or_404(email_id)["html_body"], mimetype="text/html")
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'none'; style-src 'unsafe-inline'; img-src data:; "
+        "frame-ancestors 'self'; sandbox"
+    )
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    return response

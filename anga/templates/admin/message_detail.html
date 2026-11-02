@@ -1,0 +1,23 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf, textarea %}
+{% block title %}{{ message.subject }}{% endblock %}
+{% block admin %}
+  <div class="admin-title">
+    <h1>{{ message.subject }}</h1>
+    <form method="post" action="{{ url_for('admin.mark_unread', message_id=message.id) }}">
+      {{ csrf() }}<button class="btn btn-secondary btn-sm" type="submit">Mark unread</button>
+    </form>
+  </div>
+  <section class="card mb-4">
+    <p class="small muted">{{ message.full_name }} &lt;{{ message.email }}&gt; · {{ message.created_at|datetime }}</p>
+    <p class="message-body mb-0">{{ message.body }}</p>
+  </section>
+  <form class="card" method="post" action="{{ url_for('admin.save_note', message_id=message.id) }}">
+    {{ csrf() }}
+    {{ textarea('reply_note', 'Reply note', message.reply_note or '') }}
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="{{ url_for('admin.messages') }}">Back</a>
+      <button class="btn btn-primary" type="submit">Save note</button>
+    </div>
+  </form>
+{% endblock %}
