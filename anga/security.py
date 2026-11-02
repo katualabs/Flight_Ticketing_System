@@ -53,6 +53,15 @@ def _check_csrf() -> None:
         abort(400, description="Your session expired. Please go back and try again.")
 
 
+def _load_user() -> None:
+    from anga.services.accounts import active_user
+
+    user_id = session.get("user_id")
+    g.user = active_user(user_id) if user_id else None
+    if user_id and g.user is None:
+        session.clear()
+
+
 def _apply_headers(response):
     response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -140,5 +149,6 @@ class TokenBucketLimiter:
 
 def init_app(app: Flask) -> None:
     app.before_request(_check_csrf)
+    app.before_request(_load_user)
     app.after_request(_apply_headers)
     app.jinja_env.globals["csrf_token"] = csrf_token
