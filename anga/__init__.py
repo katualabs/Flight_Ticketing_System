@@ -44,6 +44,7 @@ def create_app(config_name: str | None = None, overrides: dict | None = None) ->
 
 def _register_blueprints(app: Flask) -> None:
     from anga.blueprints.account import bp as account_bp
+    from anga.blueprints.admin import bp as admin_bp
     from anga.blueprints.api import bp as api_bp
     from anga.blueprints.booking import bp as booking_bp
     from anga.blueprints.manage import bp as manage_bp
@@ -55,4 +56,5 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(booking_bp)
     app.register_blueprint(manage_bp)
     app.register_blueprint(account_bp)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(api_bp)

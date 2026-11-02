@@ -33,6 +33,9 @@
       </form>
       <button class="tool-button" type="button" data-theme-toggle aria-label="Toggle dark theme" hidden></button>
       {% if g.user %}
+        {% if g.user.role in ('agent', 'admin') %}
+          <a class="tool-button" href="{{ url_for('admin.dashboard') }}">Ops</a>
+        {% endif %}
         <a class="tool-button" href="{{ url_for('account.dashboard') }}">{{ g.user.full_name.split()[0] }}</a>
         <form class="tool-form" method="post" action="{{ url_for('account.logout') }}">
           <input type="hidden" name="_csrf" value="{{ csrf_token() }}">

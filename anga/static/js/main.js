@@ -19,6 +19,7 @@ const LAZY_MODULES = [
   ["[data-card-number]", "./payment.js", "initCardFormat"],
   ["[data-payment-tabs]", "./payment.js", "initPaymentTabs"],
   ["[data-board]", "./board.js", "initBoard"],
+  ["[data-chart]", "./charts.js", "initCharts"],
   ["[data-print]", "./actions.js", "initPrint"],
   ["[data-traveller-picker]", "./actions.js", "initTravellerPicker"],
   ["[data-auto-submit]", "./actions.js", "initAutoSubmit"],

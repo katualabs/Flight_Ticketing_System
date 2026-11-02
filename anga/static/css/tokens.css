@@ -52,6 +52,11 @@
   --info: #27407f;
   --info-bg: #e3eafb;
 
+  /* Chart series. Validated for colourblind separation against each surface. */
+  --cat-1: #3d5fb8;
+  --cat-2: #e0771f;
+  --cat-3: #2f8f6b;
+
   /* Fare calendar heat scale, cheap to pricey */
   --heat-0: #cdeedd;
   --heat-1: #e3f2c8;
@@ -127,6 +132,10 @@
   --danger-bg: #431c1a;
   --info: #a9bdf5;
   --info-bg: #1b2a58;
+
+  --cat-1: #6685e0;
+  --cat-2: #d9741f;
+  --cat-3: #35a37b;
 
   --heat-0: #17513d;
   --heat-1: #33552f;
