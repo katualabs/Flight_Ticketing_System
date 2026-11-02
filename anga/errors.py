@@ -14,6 +14,7 @@ def _page(code: int) -> tuple[str, str]:
         403: (t("error.forbidden_title"), t("error.forbidden_body")),
         404: (t("error.not_found_title"), t("error.not_found_body")),
         413: (t("error.too_large_title"), ""),
+        429: (t("error.too_many_title"), ""),
     }
     return pages.get(code, (t("error.server_title"), t("error.server_body")))
 
@@ -26,7 +27,7 @@ def init_app(app: Flask) -> None:
                 {"ok": False, "error": {"code": error.code, "message": error.description}}
             ), error.code
         title, body = _page(error.code)
-        if error.code == 400:
+        if error.code in (400, 429):
             body = error.description
         return render_template("error.html", title=title, body=body), error.code
 

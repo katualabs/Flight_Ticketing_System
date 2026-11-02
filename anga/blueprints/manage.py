@@ -17,7 +17,6 @@ from flask import (
 )
 
 from anga import access, clock, validators
-from anga.security import TokenBucketLimiter
 from anga.services import booking as booking_service
 from anga.services import calendar_ics, checkin, manage, tickets
 from anga.services.booking import BookingError
@@ -25,7 +24,6 @@ from anga.services.booking import BookingError
 bp = Blueprint("manage", __name__, url_prefix="/manage")
 
 LOOKUP_FAILED = "We could not find a booking with those details."
-_lookup_limiter = TokenBucketLimiter(rate_per_minute=20, burst=10)
 
 
 def _load(reference: str):
@@ -41,8 +39,7 @@ def lookup():
     error = None
     values = request.form if request.method == "POST" else request.args
     if request.method == "POST":
-        limited = not current_app.testing and not _lookup_limiter.allow(request.remote_addr or "")
-        if limited:
+        if not current_app.extensions["lookup_limiter"].allow(request.remote_addr or "unknown"):
             abort(429, description="Too many attempts. Please wait a minute and try again.")
         booking = manage.lookup(request.form.get("reference", ""), request.form.get("email", ""))
         if booking is not None:

@@ -43,6 +43,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "error.server_title": "Something went wrong on our side",
         "error.server_body": "Please try again in a moment.",
         "error.too_large_title": "That upload is too large",
+        "error.too_many_title": "That was a lot of requests",
         "error.home": "Return home",
         "nav.calendar": "Fare calendar",
         "cabin.Economy": "Economy",

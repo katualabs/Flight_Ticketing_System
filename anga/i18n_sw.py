@@ -34,6 +34,7 @@ SWAHILI: dict[str, str] = {
     "error.server_title": "Kuna hitilafu upande wetu",
     "error.server_body": "Tafadhali jaribu tena baada ya muda mfupi.",
     "error.too_large_title": "Ombi hilo ni kubwa mno",
+    "error.too_many_title": "Maombi yamekuwa mengi mno",
     "error.home": "Rudi mwanzo",
     "cabin.Economy": "Daraja la kawaida",
     "cabin.Business": "Daraja la biashara",

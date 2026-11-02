@@ -9,7 +9,7 @@ from collections.abc import Callable
 from functools import wraps
 from urllib.parse import urlsplit
 
-from flask import Flask, abort, flash, g, redirect, request, session, url_for
+from flask import Flask, abort, current_app, flash, g, redirect, request, session, url_for
 
 CSRF_SESSION_KEY = "_csrf"
 CSRF_FORM_FIELD = "_csrf"
@@ -68,6 +68,8 @@ def _apply_headers(response):
     response.headers.setdefault("X-Frame-Options", "DENY")
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = PERMISSIONS_POLICY
+    if current_app.config["SESSION_COOKIE_SECURE"]:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     if request.path.startswith(NO_STORE_PREFIXES):
         response.headers["Cache-Control"] = "no-store"
     return response
@@ -148,7 +150,14 @@ class TokenBucketLimiter:
 
 
 def init_app(app: Flask) -> None:
-    app.before_request(_check_csrf)
+    # The user loads first, so a rejected request can still render its error page.
     app.before_request(_load_user)
+    app.before_request(_check_csrf)
     app.after_request(_apply_headers)
     app.jinja_env.globals["csrf_token"] = csrf_token
+    app.extensions["api_limiter"] = TokenBucketLimiter(
+        app.config["API_RATE_PER_MINUTE"], app.config["API_RATE_BURST"]
+    )
+    app.extensions["lookup_limiter"] = TokenBucketLimiter(
+        app.config["LOOKUP_RATE_PER_MINUTE"], app.config["LOOKUP_RATE_BURST"]
+    )
