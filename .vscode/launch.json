@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Anga Air: Flask",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "flask",
+      "args": ["--app", "anga", "run", "--debug", "--port", "5000"],
+      "jinja": true,
+      "justMyCode": true
+    },
+    {
+      "name": "Anga Air: pytest",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": ["-q"],
+      "justMyCode": false
+    }
+  ]
+}
