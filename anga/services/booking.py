@@ -20,7 +20,7 @@ from anga.repositories import passengers as passengers_repo
 from anga.repositories import promos as promos_repo
 from anga.repositories import seats as seats_repo
 from anga.services import pricing
-from anga.services.search import live_price
+from anga.services.search import flight_departure, live_price
 
 REFERENCE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 DRAFT_MAX_AGE_DAYS = 2
@@ -116,12 +116,6 @@ def new_draft(
 
 def _departure_of(segment: dict) -> datetime:
     return flight_departure(flights_repo.get(segment["flight_id"]))
-
-
-def flight_departure(flight: Row) -> datetime:
-    """A flight's scheduled departure in network time, whatever its airport's zone."""
-    local = datetime.fromisoformat(f"{flight['departure_date']}T{flight['departure_time']}")
-    return clock.local_to_network(local, flight["origin_tz"])
 
 
 def _check_flight_bookable(flight: Row | None) -> None:

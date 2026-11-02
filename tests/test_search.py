@@ -74,6 +74,19 @@ def test_infants_cannot_outnumber_adults(client):
     assert page.status_code == 400
 
 
+def test_flights_that_have_left_are_not_offered(seeded):
+    # The clock is frozen at 10:00, after AN101 (08:00) but before AN103 (17:30).
+    options = search.search_flights("NBO", "MBA", TODAY, "Economy", 1)
+    assert [o.flight["flight_number"] for o in options] == ["AN103"]
+
+
+def test_calendar_price_for_today_ignores_departed_flights(seeded):
+    clock.freeze(clock.now().replace(hour=23))
+    result = search.fare_calendar("NBO", "MBA", date(2026, 3, 1), "Economy", TODAY)
+    today_cell = next(c for week in result.weeks for c in week if c and c.day == TODAY)
+    assert today_cell.price is None
+
+
 def test_filter_by_time_of_day(seeded):
     day = TODAY + timedelta(days=4)
     options = search.search_flights("NBO", "MBA", day, "Economy", 1, time_of_day="evening")

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import calendar
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from sqlite3 import Row
 
+from anga import clock
 from anga.repositories import airports as airports_repo
 from anga.repositories import fares as fares_repo
 from anga.repositories import flights as flights_repo
@@ -51,6 +52,12 @@ class FlightOption:
         return self.cheapest is None
 
 
+def flight_departure(flight: Row) -> datetime:
+    """A flight's scheduled departure in network time, whatever its airport's zone."""
+    local = datetime.fromisoformat(f"{flight['departure_date']}T{flight['departure_time']}")
+    return clock.local_to_network(local, flight["origin_tz"])
+
+
 def live_price(fare: Row, day: date) -> int:
     """Today's price for a fare row, applying weekend and demand adjustments."""
     load = pricing.load_factor(fare["cabin_total"], fare["cabin_available"])
@@ -89,9 +96,11 @@ def search_flights(
     max_price: int | None = None,
 ) -> list[FlightOption]:
     """Flights on a route and date, filtered and sorted for the results page."""
+    now = clock.now()
     options = [
         flight_option(flight, cabin, seats_needed)
         for flight in flights_repo.find(origin, destination, day.isoformat())
+        if flight_departure(flight) > now
     ]
     options = [option for option in options if option.fares]
     if time_of_day:
@@ -134,8 +143,11 @@ def _cheapest_by_day(
 ) -> list[dict]:
     rows = fares_repo.in_date_range(origin, destination, start.isoformat(), end.isoformat(), cabin)
     best: dict[str, int] = {}
+    now = clock.now()
     for row in rows:
         day = row["departure_date"]
+        if day == now.date().isoformat() and row["departure_time"] <= now.strftime("%H:%M"):
+            continue
         price = live_price(row, date.fromisoformat(day))
         best[day] = min(price, best.get(day, price))
     return [{"date": date.fromisoformat(day), "price": best[day]} for day in sorted(best)]
@@ -208,8 +220,9 @@ def fare_calendar(
 
 def destination_fares(today: date, days: int = 30) -> list[dict]:
     """Cheapest economy fare to each destination from the hub, for the home page."""
+    # Starts tomorrow, so a "from" price always links to flights that can still be booked.
     rows = fares_repo.economy_from_origin(
-        HUB, today.isoformat(), (today + timedelta(days=days)).isoformat()
+        HUB, (today + timedelta(days=1)).isoformat(), (today + timedelta(days=days)).isoformat()
     )
     best: dict[str, dict] = {}
     for row in rows:
