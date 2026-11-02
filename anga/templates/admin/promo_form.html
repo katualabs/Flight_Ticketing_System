@@ -1,0 +1,24 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf, field, select %}
+{% block title %}{{ 'Edit' if promo else 'New' }} promo code{% endblock %}
+{% block admin %}
+  <div class="admin-title"><h1>{{ 'Edit ' ~ promo.code if promo else 'New promo code' }}</h1></div>
+  <form class="card" method="post" novalidate>
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ field('code', 'Code', values['code'] if values else '', errors=errors, required=true, attrs={'maxlength': 20}) }}
+      {{ select('kind', 'Type', [('percent', 'Percentage'), ('fixed', 'Fixed amount (KSh)')], values['kind'] if values else 'percent', errors) }}
+      {{ field('value', 'Value', values['value'] if values else '', 'number', errors=errors, required=true, attrs={'min': 1}) }}
+      {{ select('scope', 'Applies to', [('all', 'All routes'), ('coastal', 'Coastal routes')], values['scope'] if values else 'all', errors) }}
+      {{ field('min_spend', 'Minimum spend (KSh)', values['min_spend'] if values else 0, 'number', errors=errors, attrs={'min': 0}) }}
+      {{ field('max_uses', 'Maximum uses', values['max_uses'] if values else '', 'number', errors=errors, hint='Leave blank for no limit', attrs={'min': 1}) }}
+      {{ field('valid_from', 'Valid from', values['valid_from'] if values else '', 'date', errors=errors, required=true) }}
+      {{ field('valid_to', 'Valid until', values['valid_to'] if values else '', 'date', errors=errors, required=true) }}
+    </div>
+    <label class="check mt-4"><input type="checkbox" name="active" value="1"{% if not values or values['active'] %} checked{% endif %}>Active</label>
+    <div class="form-actions">
+      <a class="btn btn-secondary" href="{{ url_for('admin.promos') }}">Cancel</a>
+      <button class="btn btn-primary" type="submit">Save</button>
+    </div>
+  </form>
+{% endblock %}

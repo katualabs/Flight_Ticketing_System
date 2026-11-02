@@ -1,0 +1,32 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf %}
+{% block title %}Promo codes{% endblock %}
+{% block admin %}
+  <div class="admin-title">
+    <h1>Promo codes</h1>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('admin.new_promo') }}">New code</a>
+  </div>
+  <div class="table-wrap">
+    <table class="table table-cards">
+      <thead><tr><th>Code</th><th>Discount</th><th>Scope</th><th>Valid</th><th>Used</th><th class="num">Given away</th><th>State</th><th></th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td data-label="Code"><a class="mono strong" href="{{ url_for('admin.edit_promo', promo_id=row.id) }}">{{ row.code }}</a></td>
+            <td data-label="Discount">{% if row.kind == 'percent' %}{{ row.value }}%{% else %}{{ row.value|ksh }}{% endif %}{% if row.min_spend %}<br><span class="xs muted">min {{ row.min_spend|ksh }}</span>{% endif %}</td>
+            <td data-label="Scope">{{ row.scope }}</td>
+            <td data-label="Valid" class="small">{{ row.valid_from|date('%d %b %y') }} &ndash; {{ row.valid_to|date('%d %b %y') }}</td>
+            <td data-label="Used">{{ row.used_count }}{% if row.max_uses %} / {{ row.max_uses }}{% endif %}</td>
+            <td data-label="Given away" class="num">{{ row.total_discount|ksh }}</td>
+            <td data-label="State">{% if row.active %}<span class="badge badge-success">Active</span>{% else %}<span class="badge">Off</span>{% endif %}</td>
+            <td data-label="">
+              <form method="post" action="{{ url_for('admin.delete_promo', promo_id=row.id) }}" data-confirm="Delete {{ row.code }}?" data-confirm-accept="Delete">
+                {{ csrf() }}<button class="btn btn-secondary btn-sm" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

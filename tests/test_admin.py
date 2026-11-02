@@ -605,3 +605,77 @@ def test_resend_confirmation_only_when_confirmed(agent, app):
         assert len(outbox.for_recipient("wanjiru@anga.example")) == before + 1
     page = agent.post("/admin/bookings/ANDEMO02/resend", follow_redirects=True)
     assert b"Only confirmed" in page.data
+
+
+PROMO_FORM = {
+    "code": "SIKUKUU20",
+    "kind": "percent",
+    "value": "20",
+    "scope": "all",
+    "min_spend": "0",
+    "valid_from": "2026-01-01",
+    "valid_to": "2026-12-31",
+    "max_uses": "",
+    "active": "1",
+}
+
+
+def test_agents_cannot_reach_promos(agent):
+    assert agent.get("/admin/promos").status_code == 403
+    assert agent.post("/admin/promos/new", data=PROMO_FORM).status_code == 403
+
+
+def test_promo_create_edit_delete(admin, app):
+    assert b"KARIBU10" in admin.get("/admin/promos").data
+    assert admin.get("/admin/promos/new").status_code == 200
+    assert admin.post("/admin/promos/new", data=PROMO_FORM).status_code == 302
+    with app.app_context():
+        promo_id = db.fetch_value("SELECT id FROM promo_codes WHERE code = 'SIKUKUU20'")
+    assert b"SIKUKUU20" in admin.get(f"/admin/promos/{promo_id}").data
+    admin.post(f"/admin/promos/{promo_id}", data={**PROMO_FORM, "value": "25"})
+    with app.app_context():
+        assert db.fetch_value("SELECT value FROM promo_codes WHERE id = ?", (promo_id,)) == 25
+    assert admin.post(f"/admin/promos/{promo_id}/delete").status_code == 302
+    with app.app_context():
+        assert db.fetch_value("SELECT COUNT(*) FROM promo_codes WHERE id = ?", (promo_id,)) == 0
+    actions = audit_actions(app)
+    for action in ("promo.create", "promo.update", "promo.delete"):
+        assert action in actions
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "fragment"),
+    [
+        ("code", "x", b"3 to 20"),
+        ("kind", "gift", b"discount type"),
+        ("value", "150", b"at most 100"),
+        ("scope", "moon", b"valid scope"),
+        ("min_spend", "-1", b"zero or more"),
+        ("valid_from", "", b"start date"),
+        ("valid_to", "2020-01-01", b"before the start"),
+        ("max_uses", "0", b"positive number"),
+    ],
+)
+def test_promo_validation(admin, field, value, fragment):
+    page = admin.post("/admin/promos/new", data={**PROMO_FORM, field: value})
+    assert page.status_code == 400
+    assert fragment in page.data
+
+
+def test_duplicate_promo_is_refused(admin):
+    page = admin.post("/admin/promos/new", data={**PROMO_FORM, "code": "karibu10"})
+    assert b"already exists" in page.data
+
+
+def test_used_promo_cannot_be_deleted(admin, app):
+    from anga.services import booking as booking_service
+    from tests.helpers import make_draft
+
+    with app.app_context():
+        draft = make_draft(family="Flex")
+        booking_service.apply_promo_code(draft, "KARIBU10")
+        booking_service.create_booking(draft)
+        promo_id = db.fetch_value("SELECT id FROM promo_codes WHERE code = 'KARIBU10'")
+    page = admin.post(f"/admin/promos/{promo_id}/delete", follow_redirects=True)
+    assert b"Deactivate it instead" in page.data
+    assert admin.get("/admin/promos/999999").status_code == 404

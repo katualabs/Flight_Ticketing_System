@@ -364,3 +364,60 @@ def resend_booking(reference: str):
         lambda: ops.resend_confirmation(g.user["id"], booking),
         "Confirmation written to the outbox again.",
     )
+
+
+# ----------------------------------------------------------------------- promos
+
+
+@bp.get("/promos")
+@admin_required
+def promos():
+    return render_template("admin/promos.html", rows=ops.promos())
+
+
+def _promo_form(promo=None):
+    errors: dict[str, str] = {}
+    if request.method == "POST":
+        data, errors = validators.validate_promo(request.form)
+        if not errors:
+            try:
+                ops.save_promo(g.user["id"], data, promo["id"] if promo else None)
+            except OpsError as error:
+                errors["code"] = str(error)
+            else:
+                flash(f"Promo code {data['code']} saved.", "success")
+                return redirect(url_for("admin.promos"))
+    values = request.form if request.method == "POST" else (promo or {})
+    return render_template("admin/promo_form.html", errors=errors, values=values, promo=promo), (
+        400 if errors else 200
+    )
+
+
+@bp.route("/promos/new", methods=["GET", "POST"])
+@admin_required
+def new_promo():
+    return _promo_form()
+
+
+def _promo_or_404(promo_id: int):
+    promo = ops.get_promo(promo_id)
+    if promo is None:
+        abort(404)
+    return promo
+
+
+@bp.route("/promos/<int:promo_id>", methods=["GET", "POST"])
+@admin_required
+def edit_promo(promo_id: int):
+    return _promo_form(_promo_or_404(promo_id))
+
+
+@bp.post("/promos/<int:promo_id>/delete")
+@admin_required
+def delete_promo(promo_id: int):
+    try:
+        ops.delete_promo(g.user["id"], _promo_or_404(promo_id))
+        flash("Promo code deleted.", "success")
+    except OpsError as error:
+        flash(str(error), "error")
+    return redirect(url_for("admin.promos"))
