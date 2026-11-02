@@ -1,0 +1,48 @@
+{% extends "admin/_layout.html" %}
+{% from "macros.html" import csrf, pagination %}
+{% block title %}Users{% endblock %}
+{% block admin %}
+  <div class="admin-title"><h1>Users</h1></div>
+  <form class="filter-bar" method="get">
+    <div class="field"><label for="u-q">Name or email</label><input class="input" id="u-q" name="q" value="{{ q or '' }}"></div>
+    <button class="btn btn-secondary" type="submit">Search</button>
+  </form>
+  <div class="table-wrap">
+    <table class="table table-cards">
+      <thead><tr><th>Name</th><th>Email</th><th>Bookings</th><th>Miles</th><th>Last login</th><th>Role</th><th>Account</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td data-label="Name">{{ row.full_name }}</td>
+            <td data-label="Email" class="small">{{ row.email }}</td>
+            <td data-label="Bookings">{{ row.booking_count }}</td>
+            <td data-label="Miles">{{ '{:,}'.format(row.miles_balance) }}</td>
+            <td data-label="Last login" class="small">{{ row.last_login|datetime or 'Never' }}</td>
+            <td data-label="Role">
+              <form class="row" method="post" action="{{ url_for('admin.change_role', user_id=row.id) }}" data-auto-submit>
+                {{ csrf() }}
+                <label class="visually-hidden" for="role-{{ row.id }}">Role for {{ row.email }}</label>
+                <select class="select" id="role-{{ row.id }}" name="role"{% if row.id == g.user.id %} disabled{% endif %}>
+                  {% for role in roles %}<option value="{{ role }}"{% if role == row.role %} selected{% endif %}>{{ role }}</option>{% endfor %}
+                </select>
+                <noscript><button class="btn btn-secondary btn-sm" type="submit">Save</button></noscript>
+              </form>
+            </td>
+            <td data-label="Account">
+              {% if row.id != g.user.id %}
+                <form method="post" action="{{ url_for('admin.disable_user', user_id=row.id) }}"{% if not row.disabled %} data-confirm="Disable {{ row.email }}?" data-confirm-accept="Disable"{% endif %}>
+                  {{ csrf() }}
+                  <input type="hidden" name="disabled" value="{{ '0' if row.disabled else '1' }}">
+                  <button class="btn btn-secondary btn-sm" type="submit">{{ 'Enable' if row.disabled else 'Disable' }}</button>
+                </form>
+              {% else %}
+                <span class="small muted">You</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {{ pagination(page, pages, 'admin.users', {'q': q} if q else {}) }}
+{% endblock %}

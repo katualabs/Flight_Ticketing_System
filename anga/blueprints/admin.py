@@ -421,3 +421,55 @@ def delete_promo(promo_id: int):
     except OpsError as error:
         flash(str(error), "error")
     return redirect(url_for("admin.promos"))
+
+
+# ------------------------------------------------------------------------ users
+
+
+@bp.get("/users")
+@admin_required
+def users():
+    query = validators.clean(request.args.get("q")) or None
+    page = _page()
+    rows, total = ops.users(query, page)
+    return render_template(
+        "admin/users.html",
+        rows=rows,
+        roles=ROLES,
+        q=query,
+        page=page,
+        pages=ops.pages_for(total),
+    )
+
+
+def _user_or_404(user_id: int):
+    user = ops.get_user(user_id)
+    if user is None:
+        abort(404)
+    return user
+
+
+@bp.post("/users/<int:user_id>/role")
+@admin_required
+def change_role(user_id: int):
+    role = request.form.get("role")
+    if role not in ROLES:
+        abort(400, description="Unknown role.")
+    try:
+        ops.change_role(g.user["id"], _user_or_404(user_id), role)
+        flash("Role updated.", "success")
+    except OpsError as error:
+        flash(str(error), "error")
+    return redirect(url_for("admin.users"))
+
+
+@bp.post("/users/<int:user_id>/disable")
+@admin_required
+def disable_user(user_id: int):
+    disabled = request.form.get("disabled") == "1"
+    try:
+        ops.set_user_disabled(g.user["id"], _user_or_404(user_id), disabled)
+        flash("Account disabled." if disabled else "Account enabled.", "success")
+    except OpsError as error:
+        flash(str(error), "error")
+    return redirect(url_for("admin.users"))

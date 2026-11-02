@@ -679,3 +679,48 @@ def test_used_promo_cannot_be_deleted(admin, app):
     page = admin.post(f"/admin/promos/{promo_id}/delete", follow_redirects=True)
     assert b"Deactivate it instead" in page.data
     assert admin.get("/admin/promos/999999").status_code == 404
+
+
+def test_agents_cannot_reach_users(agent):
+    assert agent.get("/admin/users").status_code == 403
+    assert agent.post("/admin/users/1/role", data={"role": "admin"}).status_code == 403
+    assert agent.post("/admin/users/1/disable", data={"disabled": "1"}).status_code == 403
+
+
+def user_id(app, email):
+    with app.app_context():
+        return db.fetch_value("SELECT id FROM users WHERE email = ?", (email,))
+
+
+def test_user_list_and_search(admin):
+    page = admin.get("/admin/users")
+    assert b"wanjiru@anga.example" in page.data
+    assert b"wanjiru@anga.example" not in admin.get("/admin/users?q=baraka").data
+
+
+def test_change_role_grants_access(admin, app):
+    target = user_id(app, "wanjiru@anga.example")
+    assert admin.post(f"/admin/users/{target}/role", data={"role": "agent"}).status_code == 302
+    with app.app_context():
+        assert db.fetch_value("SELECT role FROM users WHERE id = ?", (target,)) == "agent"
+    assert admin.post(f"/admin/users/{target}/role", data={"role": "root"}).status_code == 400
+    assert "user.role" in audit_actions(app)
+
+
+def test_admin_cannot_change_or_disable_themselves(admin, app):
+    me = user_id(app, "admin@anga.example")
+    page = admin.post(f"/admin/users/{me}/role", data={"role": "customer"}, follow_redirects=True)
+    assert b"your own role" in page.data
+    page = admin.post(f"/admin/users/{me}/disable", data={"disabled": "1"}, follow_redirects=True)
+    assert b"your own account" in page.data
+
+
+def test_disable_and_enable_user(admin, app):
+    target = user_id(app, "wanjiru@anga.example")
+    admin.post(f"/admin/users/{target}/disable", data={"disabled": "1"})
+    with app.app_context():
+        assert db.fetch_value("SELECT disabled FROM users WHERE id = ?", (target,)) == 1
+    admin.post(f"/admin/users/{target}/disable", data={"disabled": "0"})
+    with app.app_context():
+        assert db.fetch_value("SELECT disabled FROM users WHERE id = ?", (target,)) == 0
+    assert admin.post("/admin/users/999999/disable", data={}).status_code == 404
