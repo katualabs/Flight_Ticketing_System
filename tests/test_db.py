@@ -10,8 +10,8 @@ from anga import db
 
 
 @pytest.fixture
-def ctx(app):
-    with app.app_context():
+def ctx(empty_app):
+    with empty_app.app_context():
         db.init_db()
         yield
 

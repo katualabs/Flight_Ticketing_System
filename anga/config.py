@@ -47,6 +47,7 @@ class Config:
     HASH_METHOD = "scrypt"
     AUTO_SEED = True
     SCHEDULE_HORIZON_DAYS = 45
+    SCHEDULE_HISTORY_DAYS = 28
 
     MPESA_SIM_SECONDS = int(os.environ.get("MPESA_SIM_SECONDS", "4"))
     LOGIN_MAX_ATTEMPTS = 5
@@ -67,6 +68,7 @@ class TestingConfig(Config):
     AUTO_SEED = False
     HASH_METHOD = "pbkdf2:sha256:1000"
     SCHEDULE_HORIZON_DAYS = 21
+    SCHEDULE_HISTORY_DAYS = 10
     MPESA_SIM_SECONDS = 0
     API_RATE_PER_MINUTE = 6000
     API_RATE_BURST = 1000

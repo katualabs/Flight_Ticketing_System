@@ -7,7 +7,7 @@ from pathlib import Path
 
 from flask import Flask
 
-from anga import db
+from anga import cli, db
 from anga.config import CONFIGS, load_or_create_secret_key
 
 
@@ -33,6 +33,7 @@ def create_app(config_name: str | None = None, overrides: dict | None = None) ->
 
     db.init_app(app)
     _register_blueprints(app)
+    cli.register(app)
     return app
 
 
