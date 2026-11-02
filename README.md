@@ -138,6 +138,9 @@ You need Python 3.11 or newer.
    python run.py
    ```
 
+If something else is already using port 5000, Windows may let both servers start and you could
+see the other app. Stop it, or set `PORT` in `.env` to use another port.
+
 On Linux or macOS, activate with `source .venv/bin/activate` and copy with `cp`. The demo data
 also seeds itself on first run if you skip step 5.
 
